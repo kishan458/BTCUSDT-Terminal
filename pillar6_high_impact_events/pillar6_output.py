@@ -2,6 +2,9 @@ import sqlite3
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from pillar6_high_impact_events.ai_reasoning_engine import build_ai_reasoning
+from pillar6_high_impact_events.trade_restriction_engine import build_trade_restrictions
+from pillar6_high_impact_events.confidence_engine import build_confidence_score
 from pillar6_high_impact_events.uncertainty_engine import compute_base_uncertainty
 from pillar6_high_impact_events.scenario_engine import build_scenarios
 
@@ -78,6 +81,28 @@ def build_pillar6_output() -> dict:
     base_unc = unc["base_uncertainty"]
     dom = _dominant_skew(scen["scenarios"])
 
+    conf = build_confidence_score(
+    event=event,
+    historical_samples=scen["historical_samples"],
+    base_uncertainty=base_unc
+    )
+
+    trade_restrictions = build_trade_restrictions(
+    base_uncertainty=base_unc,
+    confidence_score=conf["confidence_score"],
+    event_state=event["state"],
+    )
+    
+    ai_reasoning = build_ai_reasoning({
+    "event_name": event["event_name"],
+    "state": event["state"],
+    "base_uncertainty": base_unc,
+    "confidence_score": conf["confidence_score"],
+    "dominant_risk_skew": dom,
+    "trade_restrictions": trade_restrictions,
+    "scenarios": scen["scenarios"],
+    })
+
     # guidance (data-backed via uncertainty + time-to-event)
     minutes_to_event = unc["components"]["minutes_to_event"]
     if minutes_to_event <= 0:
@@ -93,9 +118,12 @@ def build_pillar6_output() -> dict:
         "event": event["event_name"],
         "state": event["state"],
         "base_uncertainty": base_unc,
+        "confidence_score": conf["confidence_score"],
+        "trade_restrictions": trade_restrictions,
         "scenarios": scen["scenarios"],
         "dominant_risk_skew": dom,
         "terminal_guidance": guidance,
+        "ai_reasoning": ai_reasoning,
         # optional debug you can keep or remove:
         "debug": {
             "scheduled_time_utc": event["scheduled_time_utc"],
@@ -103,5 +131,6 @@ def build_pillar6_output() -> dict:
             "uncertainty_components": unc["components"],
             "probability_method": scen["probability_method"],
             "historical_samples": scen["historical_samples"],
+            "confidence_components": conf["confidence_components"],
         },
     }
