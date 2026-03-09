@@ -143,3 +143,102 @@ We will build in this order — no exceptions:
 6.  **Pillar 2** – Market Memory
 7.  **Pillar 7** – ML Council
 8.  **Pillar 8** – Decision & Backtesting
+
+
+Curently working Pillar-5 Ideal Output:
+
+{
+  "asset": "BTCUSDT",
+  "timestamp_utc": "2026-03-08 00:00:00",
+
+  "regime_summary": {
+    "directional_regime": "WEAK_UPTREND",
+    "volatility_regime": "NORMAL",
+    "market_state": "TRENDING",
+    "cycle_phase": "EXPANSION"
+  },
+
+  "confidence_score": 0.78,
+
+  "strategy_compatibility": {
+    "trend_following": "FAVORED",
+    "breakout_trading": "MODERATELY_FAVORED",
+    "mean_reversion": "NOT_FAVORED",
+    "stand_down": false
+  },
+
+  "regime_explanation": {
+    "trend_context": "Price is holding above medium-term trend structure with constructive pullbacks.",
+    "volatility_context": "Volatility is elevated but not disorderly.",
+    "cycle_context": "Market behavior resembles expansion rather than accumulation or distribution."
+  },
+
+  "session_context": {
+    "current_session": "LONDON",
+    "sessions": [
+      {"name": "ASIA", "start_utc": "00:00", "end_utc": "08:00", "active": false},
+      {"name": "LONDON", "start_utc": "08:00", "end_utc": "13:00", "active": true},
+      {"name": "NEW_YORK", "start_utc": "13:00", "end_utc": "22:00", "active": false},
+      {"name": "LATE_HOURS", "start_utc": "22:00", "end_utc": "00:00", "active": false}
+    ],
+    "session_high": 94320.5,
+    "session_low": 93680.2
+  },
+
+  "market_metrics": {
+    "ohlcv": {
+      "open": 93950.0,
+      "high": 94320.5,
+      "low": 93680.2,
+      "close": 94110.7,
+      "volume": 18452.3
+    },
+    "returns": {
+      "return_1bar": 0.0021,
+      "return_4bar": 0.0085,
+      "return_24bar": 0.0214,
+      "return_7d": 0.0632
+    },
+    "volatility": {
+      "atr": 820.4,
+      "atr_pct": 0.0087,
+      "realized_vol": 0.026,
+      "volatility_percentile": 0.64
+    },
+    "moving_average_structure": {
+      "ema_20": 93890.2,
+      "ema_50": 93110.8,
+      "ema_200": 90420.6,
+      "ma_order": "BULLISH_STACKED",
+      "price_vs_ema20": "ABOVE",
+      "price_vs_ema50": "ABOVE",
+      "price_vs_ema200": "ABOVE"
+    },
+    "momentum": {
+      "ema20_slope": 1.42,
+      "ema50_slope": 0.88,
+      "roc": 0.031,
+      "momentum_score": 0.72
+    },
+    "compression_expansion": {
+      "range_compression_score": 0.23,
+      "expansion_score": 0.68,
+      "breakout_pressure_score": 0.61
+    },
+    "swing_structure": {
+      "latest_swing_high": 94320.5,
+      "latest_swing_low": 92840.0,
+      "structure_state": "HIGHER_HIGH_HIGHER_LOW"
+    },
+    "distance_from_key_mas": {
+      "distance_to_ema20_pct": 0.0023,
+      "distance_to_ema50_pct": 0.0107,
+      "distance_to_ema200_pct": 0.0408
+    }
+  },
+
+  "risk_flags": [
+    "Late-trend acceleration risk",
+    "Breakout failure risk if momentum weakens"
+  ]
+}
