@@ -1,4 +1,4 @@
-# 🧠 Updated System Overview (LOCKED)
+#  Updated System Overview (LOCKED)
 
 Your **BTC/USDT terminal** now consists of **8 CORE ENGINES** (each independent, but connected):
 
@@ -14,7 +14,7 @@ Your **BTC/USDT terminal** now consists of **8 CORE ENGINES** (each independent,
 
 ---
 
-## 🧱 PILLAR 1 — GLOBAL SENTIMENT & NARRATIVE ENGINE (BTC-ONLY)
+##  PILLAR 1 — GLOBAL SENTIMENT & NARRATIVE ENGINE (BTC-ONLY)
 This is where we start. Always.
 
 **Goal** Understand:
@@ -39,7 +39,7 @@ This is where we start. Always.
 
 ---
 
-## 🧱 PILLAR 2 — BTC MARKET MEMORY ENGINE
+##  PILLAR 2 — BTC MARKET MEMORY ENGINE
 **Goal:** “Has BTC seen this before? And what usually happened next?”
 
 **This pillar builds BTC-specific intuition:**
@@ -52,7 +52,7 @@ This is where we start. Always.
 
 ---
 
-## 🧱 PILLAR 3 — STRUCTURE & LIQUIDITY ENGINE
+##  PILLAR 3 — STRUCTURE & LIQUIDITY ENGINE
 **Goal:** “Where is pain? Who is trapped? Where is price attracted?”
 
 **Covers:**
@@ -66,7 +66,7 @@ This is where we start. Always.
 
 ---
 
-## 🧱 PILLAR 4 — CANDLE INTELLIGENCE ENGINE
+##  PILLAR 4 — CANDLE INTELLIGENCE ENGINE
 **Goal:** “What does THIS candle mean in THIS context?”
 
 **Covers:**
@@ -79,7 +79,7 @@ This is where we start. Always.
 
 ---
 
-## 🧱 PILLAR 5 — REGIME & CYCLE ENGINE
+##  PILLAR 5 — REGIME & CYCLE ENGINE
 **Goal:** “What kind of market is BTC in right now?”
 
 **Covers:**
@@ -92,7 +92,7 @@ This is where we start. Always.
 
 ---
 
-## 🧱 PILLAR 6 — HIGH-IMPACT EVENT ENGINE
+##  PILLAR 6 — HIGH-IMPACT EVENT ENGINE
 **Goal:** “Is price reacting to information or uncertainty?”
 
 **Covers:**
@@ -106,19 +106,19 @@ This is where we start. Always.
 
 ---
 
-## 🧱 PILLAR 7 — MULTI-AGENT ML COUNCIL
+##  PILLAR 7 — MULTI-AGENT ML COUNCIL
 **Goal:** “What would different market participants do right now?”
 
 **Agents:**
-* 🎓 Professor trader
-* 🧑‍💻 Retail trader
-* 🏦 Institutional actor
+*  Professor trader
+*  Retail trader
+*  Institutional actor
 
 *This pillar is comparison, not prediction.*
 
 ---
 
-## 🧱 PILLAR 8 — DECISION, RISK & BACKTESTING ENGINE
+##  PILLAR 8 — DECISION, RISK & BACKTESTING ENGINE
 **Goal:** “Should I trade? How much? Or stand down?”
 
 **Covers:**
@@ -132,7 +132,7 @@ This is where we start. Always.
 
 ---
 
-## 🧠 IMPORTANT: Build Order (LOCK THIS)
+##  IMPORTANT: Build Order (LOCK THIS)
 We will build in this order — no exceptions:
 
 1.  **Pillar 1** – Sentiment & Narrative
