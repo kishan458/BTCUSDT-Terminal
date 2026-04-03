@@ -1,0 +1,493 @@
+{
+  "models": [
+    {
+      "model_name": "professor_policy_lgbm",
+      "agent_name": "professor_agent",
+      "version": "v1",
+      "created_at_utc": "2026-03-30T21:25:02+00:00",
+      "artifact_path": "pillar7_ml_council/artifacts/professor_policy_lgbm_v1.pkl",
+      "metrics": {
+        "accuracy": 0.71,
+        "f1": 0.68
+      },
+      "calibration_summary": {
+        "brier_score": 0.19
+      },
+      "train_summary": {
+        "rows": 1000
+      },
+      "split_summary": {
+        "train": 700,
+        "validation": 150,
+        "test": 150
+      },
+      "feature_columns": [
+        "sentiment_state",
+        "analog_quality",
+        "event_base_uncertainty"
+      ],
+      "target_column": "long_quality_6",
+      "notes": "first baseline run"
+    },
+    {
+      "model_name": "professor_policy_rf",
+      "agent_name": "professor_agent",
+      "version": "v1_test",
+      "created_at_utc": "2026-04-02T01:45:56+00:00",
+      "artifact_path": "pillar7_ml_council/artifacts/professor_policy_rf_long_vs_no_trade_v1_test.pkl",
+      "metrics": {
+        "val_raw": {
+          "n": 6,
+          "threshold": 0.5,
+          "accuracy": 0.3333333333333333,
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "log_loss": 0.7493386259958587,
+          "brier_score": 0.2996068483151169,
+          "ece_10": 0.45668200236582585,
+          "tp": 2,
+          "tn": 0,
+          "fp": 4,
+          "fn": 0
+        },
+        "test_raw": {
+          "n": 6,
+          "threshold": 0.5,
+          "accuracy": 0.8333333333333334,
+          "precision": 0.8333333333333334,
+          "recall": 1.0,
+          "f1": 0.9090909090909091,
+          "log_loss": 0.19483070313556747,
+          "brier_score": 0.07494622871508975,
+          "ece_10": 0.12164457261148436,
+          "tp": 5,
+          "tn": 0,
+          "fp": 1,
+          "fn": 0
+        },
+        "test_calibrated": {
+          "n": 6,
+          "threshold": 0.5,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "log_loss": 0.007103976613228008,
+          "brier_score": 0.00018757292912113634,
+          "ece_10": 0.00700808082459973,
+          "tp": 5,
+          "tn": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "calibration_summary": {
+        "method": "platt",
+        "a": 2.6222635597923385,
+        "b": -5.225314113997146
+      },
+      "train_summary": {
+        "rows_after_filter": 40,
+        "train_rows": 28,
+        "validation_rows": 6,
+        "test_rows": 6,
+        "target_mode": "long_vs_no_trade",
+        "positive_rate_train": 0.6428571428571429,
+        "positive_rate_validation": 0.3333333333333333,
+        "positive_rate_test": 0.8333333333333334,
+        "class_info_train": {
+          "counts": {
+            "1.0": 18,
+            "0.0": 10
+          },
+          "unique_classes": [
+            0.0,
+            1.0
+          ],
+          "n_unique": 2
+        },
+        "class_info_validation": {
+          "counts": {
+            "0.0": 4,
+            "1.0": 2
+          },
+          "unique_classes": [
+            0.0,
+            1.0
+          ],
+          "n_unique": 2
+        },
+        "class_info_test": {
+          "counts": {
+            "1.0": 5,
+            "0.0": 1
+          },
+          "unique_classes": [
+            0.0,
+            1.0
+          ],
+          "n_unique": 2
+        }
+      },
+      "split_summary": {
+        "train": {
+          "rows": 28,
+          "start": "2026-01-01 00:00:00+00:00",
+          "end": "2026-01-02 03:00:00+00:00"
+        },
+        "validation": {
+          "rows": 6,
+          "start": "2026-01-02 04:00:00+00:00",
+          "end": "2026-01-02 09:00:00+00:00"
+        },
+        "test": {
+          "rows": 6,
+          "start": "2026-01-02 10:00:00+00:00",
+          "end": "2026-01-02 15:00:00+00:00"
+        }
+      },
+      "feature_columns": [
+        "sentiment_confidence",
+        "analog_quality",
+        "event_base_uncertainty",
+        "allow_trade",
+        "risk_flag_count",
+        "p1_sentiment_confidence",
+        "p2_analog_quality",
+        "p2_stability_score",
+        "p6_base_uncertainty",
+        "p6_trade_allowed",
+        "sentiment_state_BULLISH",
+        "sentiment_state_<NA>",
+        "memory_state_BULLISH",
+        "memory_state_<NA>",
+        "memory_confidence_<NA>",
+        "structure_state_UPTREND",
+        "structure_state_<NA>",
+        "structure_confidence_<NA>",
+        "candle_state_CONTINUATION",
+        "candle_state_<NA>",
+        "candle_confidence_<NA>",
+        "regime_state_TREND",
+        "regime_state_<NA>",
+        "regime_confidence_<NA>",
+        "event_state_IDLE",
+        "event_state_PRE_EVENT",
+        "event_state_<NA>",
+        "event_confidence_<NA>",
+        "institutional_vs_hype_spread_<NA>",
+        "trap_risk_HIGH",
+        "trap_risk_LOW",
+        "trap_risk_<NA>",
+        "liquidation_risk_ELEVATED",
+        "liquidation_risk_LOW",
+        "liquidation_risk_<NA>",
+        "candle_intent_CONTINUATION",
+        "candle_intent_<NA>",
+        "cycle_phase_EXPANSION",
+        "cycle_phase_<NA>",
+        "size_multiplier_<NA>",
+        "leverage_cap_<NA>",
+        "p1_sentiment_BULLISH",
+        "p1_sentiment_<NA>",
+        "p1_institutional_sentiment_BULLISH",
+        "p1_institutional_sentiment_<NA>",
+        "p1_narrative_state_UNKNOWN",
+        "p1_narrative_state_<NA>",
+        "p1_narrative_maturity_UNKNOWN",
+        "p1_narrative_maturity_<NA>",
+        "p1_sentiment_divergence_<NA>",
+        "p2_memory_bias_BULLISH",
+        "p2_memory_bias_<NA>",
+        "p2_match_quality_<NA>",
+        "p2_stability_confidence_<NA>",
+        "p2_forward_bias_UNKNOWN",
+        "p2_forward_bias_<NA>",
+        "p3_market_structure_UNKNOWN",
+        "p3_market_structure_<NA>",
+        "p3_structure_state_UPTREND",
+        "p3_structure_state_<NA>",
+        "p3_range_state_UNKNOWN",
+        "p3_range_state_<NA>",
+        "p3_compression_state_UNKNOWN",
+        "p3_compression_state_<NA>",
+        "p3_nearest_liquidity_magnet_UNKNOWN",
+        "p3_nearest_liquidity_magnet_<NA>",
+        "p3_buy_side_liquidity_<NA>",
+        "p3_sell_side_liquidity_<NA>",
+        "p3_trap_risk_HIGH",
+        "p3_trap_risk_LOW",
+        "p3_trap_risk_<NA>",
+        "p3_liquidation_risk_ELEVATED",
+        "p3_liquidation_risk_LOW",
+        "p3_liquidation_risk_<NA>",
+        "p3_stop_hunt_risk_UNKNOWN",
+        "p3_stop_hunt_risk_<NA>",
+        "p4_candle_intent_CONTINUATION",
+        "p4_candle_intent_<NA>",
+        "p4_pressure_bias_UNKNOWN",
+        "p4_pressure_bias_<NA>",
+        "p4_breakout_quality_STRONG",
+        "p4_breakout_quality_WEAK",
+        "p4_breakout_quality_<NA>",
+        "p4_follow_through_quality_UNKNOWN",
+        "p4_follow_through_quality_<NA>",
+        "p4_absorption_state_UNKNOWN",
+        "p4_absorption_state_<NA>",
+        "p4_overlap_state_UNKNOWN",
+        "p4_overlap_state_<NA>",
+        "p4_rejection_state_UNKNOWN",
+        "p4_rejection_state_<NA>",
+        "p5_market_regime_TREND",
+        "p5_market_regime_<NA>",
+        "p5_volatility_regime_UNKNOWN",
+        "p5_volatility_regime_<NA>",
+        "p5_trend_regime_UNKNOWN",
+        "p5_trend_regime_<NA>",
+        "p5_cycle_phase_EXPANSION",
+        "p5_cycle_phase_<NA>",
+        "p5_strategy_compatibility_HIGH",
+        "p5_strategy_compatibility_LOW",
+        "p5_strategy_compatibility_<NA>",
+        "p6_event_name_UNKNOWN",
+        "p6_event_name_<NA>",
+        "p6_event_state_IDLE",
+        "p6_event_state_PRE_EVENT",
+        "p6_event_state_<NA>",
+        "p6_confidence_score_<NA>",
+        "p6_size_multiplier_<NA>",
+        "p6_leverage_cap_<NA>"
+      ],
+      "target_column": "binary_target",
+      "notes": "Professor baseline long_vs_no_trade model"
+    },
+    {
+      "model_name": "retail_policy_rf",
+      "agent_name": "retail_agent",
+      "version": "v1_test",
+      "created_at_utc": "2026-04-02T02:06:02+00:00",
+      "artifact_path": "pillar7_ml_council/artifacts/retail_policy_rf_long_vs_no_action_v1_test.pkl",
+      "metrics": {
+        "val_raw": {
+          "n": 6,
+          "threshold": 0.5,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "log_loss": 0.05794255265293971,
+          "brier_score": 0.0036409752647278055,
+          "ece_10": 0.05603323324279203,
+          "tp": 2,
+          "tn": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "test_raw": {
+          "n": 6,
+          "threshold": 0.5,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "log_loss": 0.0236656989854109,
+          "brier_score": 0.001010222651004715,
+          "ece_10": 0.023138115220835767,
+          "tp": 5,
+          "tn": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "test_calibrated": {
+          "n": 6,
+          "threshold": 0.5,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "log_loss": 0.0003507797631176544,
+          "brier_score": 5.225596452435519e-07,
+          "ece_10": 0.0003505181777567772,
+          "tp": 5,
+          "tn": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "calibration_summary": {
+        "method": "platt",
+        "a": 2.3239359659964967,
+        "b": -0.3927445889904497
+      },
+      "train_summary": {
+        "rows_after_filter": 40,
+        "train_rows": 28,
+        "validation_rows": 6,
+        "test_rows": 6,
+        "target_mode": "long_vs_no_action",
+        "positive_rate_train": 0.6428571428571429,
+        "positive_rate_validation": 0.3333333333333333,
+        "positive_rate_test": 0.8333333333333334,
+        "class_info_train": {
+          "counts": {
+            "1.0": 18,
+            "0.0": 10
+          },
+          "unique_classes": [
+            0.0,
+            1.0
+          ],
+          "n_unique": 2
+        },
+        "class_info_validation": {
+          "counts": {
+            "0.0": 4,
+            "1.0": 2
+          },
+          "unique_classes": [
+            0.0,
+            1.0
+          ],
+          "n_unique": 2
+        },
+        "class_info_test": {
+          "counts": {
+            "1.0": 5,
+            "0.0": 1
+          },
+          "unique_classes": [
+            0.0,
+            1.0
+          ],
+          "n_unique": 2
+        },
+        "trap_rate_train": 0.0,
+        "trap_rate_validation": 0.0,
+        "trap_rate_test": 0.0
+      },
+      "split_summary": {
+        "train": {
+          "rows": 28,
+          "start": "2026-02-01 00:00:00+00:00",
+          "end": "2026-02-02 03:00:00+00:00"
+        },
+        "validation": {
+          "rows": 6,
+          "start": "2026-02-02 04:00:00+00:00",
+          "end": "2026-02-02 09:00:00+00:00"
+        },
+        "test": {
+          "rows": 6,
+          "start": "2026-02-02 10:00:00+00:00",
+          "end": "2026-02-02 15:00:00+00:00"
+        }
+      },
+      "feature_columns": [
+        "sentiment_confidence",
+        "event_base_uncertainty",
+        "allow_trade",
+        "risk_flag_count",
+        "p1_sentiment_confidence",
+        "p2_analog_quality",
+        "p6_base_uncertainty",
+        "p6_trade_allowed",
+        "sentiment_state_BULLISH",
+        "sentiment_state_NEUTRAL",
+        "sentiment_state_<NA>",
+        "memory_state_BULLISH",
+        "memory_state_NEUTRAL",
+        "memory_state_<NA>",
+        "candle_state_CONTINUATION",
+        "candle_state_NEUTRAL",
+        "candle_state_<NA>",
+        "regime_state_RANGE",
+        "regime_state_TREND",
+        "regime_state_<NA>",
+        "event_state_IDLE",
+        "event_state_<NA>",
+        "institutional_vs_hype_spread_<NA>",
+        "trap_risk_LOW",
+        "trap_risk_<NA>",
+        "liquidation_risk_LOW",
+        "liquidation_risk_<NA>",
+        "candle_intent_CONTINUATION",
+        "candle_intent_NEUTRAL",
+        "candle_intent_<NA>",
+        "p1_sentiment_BULLISH",
+        "p1_sentiment_NEUTRAL",
+        "p1_sentiment_<NA>",
+        "p1_final_sentiment_UNKNOWN",
+        "p1_final_sentiment_<NA>",
+        "p1_institutional_sentiment_NEUTRAL",
+        "p1_institutional_sentiment_<NA>",
+        "p1_narrative_state_HYPE_EXPANDING",
+        "p1_narrative_state_MIXED",
+        "p1_narrative_state_<NA>",
+        "p1_narrative_maturity_UNKNOWN",
+        "p1_narrative_maturity_<NA>",
+        "p1_sentiment_divergence_<NA>",
+        "p2_memory_bias_BULLISH",
+        "p2_memory_bias_NEUTRAL",
+        "p2_memory_bias_<NA>",
+        "p2_forward_bias_BULLISH",
+        "p2_forward_bias_NEUTRAL",
+        "p2_forward_bias_<NA>",
+        "p2_match_quality_<NA>",
+        "p3_structure_state_RANGE",
+        "p3_structure_state_UPTREND",
+        "p3_structure_state_<NA>",
+        "p3_market_structure_UNKNOWN",
+        "p3_market_structure_<NA>",
+        "p3_range_state_UNKNOWN",
+        "p3_range_state_<NA>",
+        "p3_compression_state_UNKNOWN",
+        "p3_compression_state_<NA>",
+        "p3_nearest_liquidity_magnet_UNKNOWN",
+        "p3_nearest_liquidity_magnet_<NA>",
+        "p3_trap_risk_LOW",
+        "p3_trap_risk_<NA>",
+        "p3_liquidation_risk_LOW",
+        "p3_liquidation_risk_<NA>",
+        "p3_stop_hunt_risk_UNKNOWN",
+        "p3_stop_hunt_risk_<NA>",
+        "p4_candle_intent_CONTINUATION",
+        "p4_candle_intent_NEUTRAL",
+        "p4_candle_intent_<NA>",
+        "p4_pressure_bias_BUY_PRESSURE",
+        "p4_pressure_bias_UNKNOWN",
+        "p4_pressure_bias_<NA>",
+        "p4_breakout_quality_STRONG",
+        "p4_breakout_quality_WEAK",
+        "p4_breakout_quality_<NA>",
+        "p4_follow_through_quality_UNKNOWN",
+        "p4_follow_through_quality_<NA>",
+        "p4_absorption_state_UNKNOWN",
+        "p4_absorption_state_<NA>",
+        "p4_overlap_state_UNKNOWN",
+        "p4_overlap_state_<NA>",
+        "p4_rejection_state_UNKNOWN",
+        "p4_rejection_state_<NA>",
+        "p5_market_regime_RANGE",
+        "p5_market_regime_TREND",
+        "p5_market_regime_<NA>",
+        "p5_volatility_regime_UNKNOWN",
+        "p5_volatility_regime_<NA>",
+        "p5_trend_regime_UNKNOWN",
+        "p5_trend_regime_<NA>",
+        "p5_cycle_phase_EXPANSION",
+        "p5_cycle_phase_MID",
+        "p5_cycle_phase_<NA>",
+        "p5_market_state_UNKNOWN",
+        "p5_market_state_<NA>",
+        "p6_event_name_UNKNOWN",
+        "p6_event_name_<NA>",
+        "p6_event_state_IDLE",
+        "p6_event_state_<NA>",
+        "p6_confidence_score_<NA>"
+      ],
+      "target_column": "binary_target",
+      "notes": "Retail baseline long_vs_no_action model"
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "asset": "BTCUSDT",
+  "timestamp_utc": "2026-03-02 20:00:00",
+  "shared_state_summary": {
+    "regime_state": "STRONG_UPTREND",
+    "event_state": "IDLE",
+    "structure_state": "MIXED_STRUCTURE",
+    "sentiment_state": "positive",
+    "memory_state": "MEAN_REVERSION_BIAS",
+    "candle_state": "BUY_ABSORPTION_CANDIDATE"
+  },
+  "agent_outputs": {
+    "professor_agent": {
+      "model_name": "professor_policy_rf",
+      "target_mode": "long_vs_no_trade",
+      "version": "v1_test",
+      "predicted_label": "NO_TRADE",
+      "raw_probability": 0.449331721383192,
+      "calibrated_probability": 0.0031455784541738305,
+      "threshold": 0.5
+    },
+    "retail_agent": {
+      "model_name": "retail_policy_rf",
+      "target_mode": "long_vs_no_action",
+      "version": "v1_test",
+      "predicted_label": "NO_ACTION",
+      "raw_probability": 0.468253294499618,
+      "calibrated_probability": 0.33442217908977184,
+      "threshold": 0.5
+    }
+  },
+  "disagreement": {
+    "alignment_class": "INACTIVE_ALIGNMENT",
+    "agreement_score": 0.75,
+    "conflict_score": 0.25,
+    "confidence_dispersion": 0.331276600635598,
+    "dominant_agent": "RETAIL_AGENT",
+    "minority_agent": "PROFESSOR_AGENT",
+    "dominance_gap": 0.331276600635598,
+    "professor_direction": "INACTIVE",
+    "retail_direction": "INACTIVE",
+    "professor_probability": 0.0031455784541738305,
+    "retail_probability": 0.33442217908977184
+  },
+  "council": {
+    "council_bias": "NO_TRADE",
+    "tradeability_score": 0.0,
+    "dominant_agent": "RISK_VETO",
+    "reason": "trade_restricted"
+  },
+  "trade_context": {
+    "allow_trade": false,
+    "event_base_uncertainty": 0.8998498870506209,
+    "risk_flags": [
+      "BREAKOUT_QUALITY_WEAK",
+      "Follow-through remains weak",
+      "Momentum context is stalling",
+      "Directional pressure remains weak",
+      "Late-trend acceleration risk",
+      "Volatility shock risk",
+      "Breakout failure risk",
+      "EVENT_UNCERTAINTY_HIGH",
+      "EVENT_TRADE_RESTRICTED"
+    ],
+    "risk_flag_count": 9,
+    "trade_restrictions": {
+      "allow_trade": false,
+      "size_multiplier": 0.0,
+      "leverage_cap": 1.0,
+      "restriction_reason": "Extreme uncertainty regime. Stand down until post-event structure appears."
+    }
+  },
+  "explanation": {
+    "headline": "NO_TRADE | INACTIVE_ALIGNMENT",
+    "narrative": "Both agents are leaning inactive / non-committal (agreement=0.75, conflict=0.25). Council bias is NO_TRADE with a tradeability score of 0.00. Professor agent suggests NO_TRADE (calibrated_prob=0.00). Retail agent suggests NO_ACTION (calibrated_prob=0.33). Dominant agent in the blend is RISK_VETO. Trading is currently restricted by the risk layer. Event uncertainty is high at 0.90. There are 9 active risk flags.",
+    "alignment_text": "Both agents are leaning inactive / non-committal (agreement=0.75, conflict=0.25).",
+    "tradeability_text": "Council bias is NO_TRADE with a tradeability score of 0.00.",
+    "agent_text": "Professor agent suggests NO_TRADE (calibrated_prob=0.00). Retail agent suggests NO_ACTION (calibrated_prob=0.33). Dominant agent in the blend is RISK_VETO.",
+    "risk_text": "Trading is currently restricted by the risk layer. Event uncertainty is high at 0.90. There are 9 active risk flags.",
+    "reason_stack": [
+      "professor=NO_TRADE",
+      "retail=NO_ACTION",
+      "agreement_state=INACTIVE_ALIGNMENT",
+      "council_bias=NO_TRADE",
+      "trade_restricted",
+      "event_uncertainty_high",
+      "risk_flags=9"
+    ]
+  },
+  "ai_overview": {
+    "headline": "NO_TRADE | INACTIVE_ALIGNMENT",
+    "overview": "The BTCUSDT market is currently situated within a strong uptrend, exhibiting positive sentiment and potential buy absorption, yet the underlying structure is mixed with a discernible mean-reversion bias. Despite these positive surface indicators, the environment is characterized by extreme uncertainty, triggered by a significant event and multiple risk flags. This confluence suggests the current move is structurally fragile and heavily risk-suppressed, burdened by late-trend acceleration risk and weak follow-through.\n\nBoth the Professor and Retail agents are aligned in their inactive stance, signaling \"NO_TRADE\" and \"NO_ACTION\" respectively, with a high agreement score of 0.75. Notably, the Retail agent exhibits nominal dominance in this shared inaction, indicating a broad-based hesitation rather than an aggressive collective retreat. This high consensus on standing aside, while seemingly constructive in mitigating immediate speculative pressure, is more indicative of a late-stage caution, where even less sophisticated market participants acknowledge the inherent uncertainty.\n\nTactical implications are unequivocally clear: a complete cessation of trading activity is mandated due to the severe restrictions imposed by the system. The confluence of weak breakout quality, stalling momentum, and persistent directional weakness, alongside elevated late-trend acceleration risk and potential for volatility shock, renders any active positioning imprudent. Capital preservation remains the paramount directive, awaiting the resolution of current event uncertainty and the emergence of a more robust structural framework.",
+    "source": "gemini"
+  },
+  "reason_stack": [
+    "professor=NO_TRADE",
+    "retail=NO_ACTION",
+    "agreement_state=INACTIVE_ALIGNMENT",
+    "council_bias=NO_TRADE",
+    "trade_restricted",
+    "event_uncertainty_high",
+    "risk_flags=9"
+  ]
+}
