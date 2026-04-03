@@ -145,112 +145,73 @@ We will build in this order — no exceptions:
 8.  **Pillar 8** – Decision & Backtesting
 
 
-Curently working Pillar-2 Ideal Output:
+Curently working Pillar-2 Ideal file structure:
 
 
-Locked ideal output v2
-{
-  "asset": "BTCUSDT",
-  "timestamp_utc": "...",
+pillar8_decision_risk_backtesting/
+    __init__.py
 
-  "memory_summary": {
-    "current_memory_state": "...",
-    "historical_match_quality": "HIGH|MODERATE|LOW",
-    "sample_size": 0,
-    "effective_sample_size": 0.0,
-    "memory_bias": "CONTINUATION_BIAS|MEAN_REVERSION_BIAS|MIXED|NO_CLEAR_EDGE",
-    "headline_confidence": 0.0
-  },
+    state/
+        decision_state_builder.py
+        decision_schema.py
 
-  "current_state_signature": {
-    "session": "...",
-    "session_transition": "...",
-    "weekday": "...",
-    "weekend_flag": false,
-    "volatility_bucket": "...",
-    "expansion_state": "...",
-    "compression_state": "...",
-    "momentum_state": "...",
-    "path_efficiency_state": "...",
-    "overlap_state": "...",
-    "follow_through_quality": "...",
-    "pressure_bias": "...",
-    "breakout_state": "...",
-    "range_position": "...",
-    "candle_intent": "...",
-    "event_context": "...",
-    "regime_context": "..."
-  },
+    decision/
+        decision_gate_engine.py
+        alignment_engine.py
+        veto_engine.py
+        conviction_engine.py
 
-  "historical_analogs": {
-    "match_count": 0,
-    "exact_match_count": 0,
-    "partial_match_count": 0,
-    "weighted_match_count": 0,
-    "analog_quality_score": 0.0,
-    "recency_weighted_score": 0.0
-  },
+    risk/
+        risk_score_engine.py
+        market_risk_engine.py
+        execution_risk_engine.py
+        model_risk_engine.py
+        leverage_guard.py
+        drawdown_guard.py
 
-  "forward_outcomes": {
-    "next_bar_up_probability": 0.0,
-    "next_3_bar_up_probability": 0.0,
-    "next_6_bar_up_probability": 0.0,
-    "next_12_bar_up_probability": 0.0,
+    sizing/
+        volatility_target_engine.py
+        fractional_kelly_engine.py
+        size_allocator.py
+        leverage_cap_engine.py
 
-    "mean_forward_return_3": 0.0,
-    "median_forward_return_3": 0.0,
-    "mean_forward_return_6": 0.0,
-    "median_forward_return_6": 0.0,
-    "mean_forward_return_12": 0.0,
-    "median_forward_return_12": 0.0,
+    execution/
+        trade_constructor.py
+        stop_engine.py
+        target_engine.py
+        invalidation_engine.py
+        holding_horizon_engine.py
 
-    "mean_mfe_6": 0.0,
-    "mean_mae_6": 0.0,
-    "mfe_mae_ratio_6": 0.0,
+    backtesting/
+        backtest_runner.py
+        cost_model.py
+        slippage_model.py
+        fill_model.py
+        metrics_engine.py
+        regime_segmentation.py
+        walkforward_runner.py
+        validation_report.py
 
-    "continuation_probability": 0.0,
-    "reversal_probability": 0.0,
-    "mean_reversion_probability": 0.0,
-    "volatility_expansion_probability": 0.0,
-    "failure_probability": 0.0
-  },
+    stress/
+        monte_carlo_engine.py
+        drawdown_stress_engine.py
+        cost_shock_engine.py
+        regime_stress_engine.py
+        ruin_probability_engine.py
 
-  "distribution_diagnostics": {
-    "return_std_3": 0.0,
-    "return_std_6": 0.0,
-    "return_iqr_3": 0.0,
-    "left_tail_10pct_6": 0.0,
-    "right_tail_90pct_6": 0.0,
-    "skew_proxy_6": 0.0,
-    "path_dispersion_score": 0.0
-  },
+    explainability/
+        decision_explainer.py
+        audit_trace_builder.py
+        warning_formatter.py
 
-  "stability_diagnostics": {
-    "older_window_bias": "...",
-    "middle_window_bias": "...",
-    "recent_window_bias": "...",
-    "temporal_stability_score": 0.0,
-    "regime_dependency_score": 0.0,
-    "sample_reliability": "HIGH|MODERATE|LOW|INSUFFICIENT"
-  },
+    output/
+        pillar8_output.py
+        terminal_printer.py
 
-  "context_memory": {
-    "session_tendency": "...",
-    "calendar_tendency": "...",
-    "volatility_tendency": "...",
-    "event_tendency": "...",
-    "regime_tendency": "..."
-  },
-
-  "ml_readiness": {
-    "state_vector_available": true,
-    "point_in_time_valid": true,
-    "feature_completeness_score": 0.0,
-    "embedding_ready": false,
-    "leakage_risk_flag": false
-  },
-
-  "risk_flags": [],
-  "ai_overview": "..."
-}
-}
+    tests/
+        test_decision_gate.py
+        test_risk_score.py
+        test_size_allocator.py
+        test_backtest_runner.py
+        test_monte_carlo_engine.py
+        test_pillar8_output.py
