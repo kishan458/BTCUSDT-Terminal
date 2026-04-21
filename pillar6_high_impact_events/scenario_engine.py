@@ -3,7 +3,8 @@ import pandas as pd
 from pillar6_high_impact_events.cpi_probability_engine import build_cpi_probabilities
 from pillar6_high_impact_events.nfp_probability_engine import build_nfp_probabilities
 
-DB_PATH = "database/btc_terminal.db"
+from core.db import resolve_db_path
+DB_PATH = str(resolve_db_path())
 
 
 def _historical_surprise_probs(event_name: str) -> dict:
@@ -51,16 +52,16 @@ def _historical_surprise_probs(event_name: str) -> dict:
     if band == 0 or pd.isna(band):
         return {"available": False, "probs": None, "n": n}
 
-    up = (df["diff"] > band * 0.25).mean()
-    down = (df["diff"] < -band * 0.25).mean()
+    up     = (df["diff"] >  band * 0.25).mean()
+    down   = (df["diff"] < -band * 0.25).mean()
     inline = 1.0 - up - down
 
     return {
         "available": True,
         "probs": {
-            "UP": float(up),
+            "UP":     float(up),
             "INLINE": float(inline),
-            "DOWN": float(down)
+            "DOWN":   float(down)
         },
         "n": n
     }
@@ -288,8 +289,11 @@ def build_scenarios(event: dict) -> dict:
     else:
         scenarios = _build_generic_scenarios(probs)
 
-    method = "historical_actual_change_distribution" if hist["available"] else "insufficient_actual_forecast_data"
-
+    method = (
+        "historical_actual_change_distribution"
+        if hist["available"]
+        else "insufficient_actual_forecast_data"
+    )
     if event_name == "FOMC Rate Decision":
         method = "qualitative_fomc_scenario_framework"
 
@@ -298,5 +302,5 @@ def build_scenarios(event: dict) -> dict:
         "probability_method": method,
         "historical_samples": hist["n"],
         "event_type": event_type,
-        "probability_available": probability_available
+        "probability_available": probability_available,
     }

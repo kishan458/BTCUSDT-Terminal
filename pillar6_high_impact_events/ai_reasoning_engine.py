@@ -1,23 +1,26 @@
 import os
 from typing import Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def _fallback_reasoning(payload: dict[str, Any]) -> str:
-    event_name = payload.get("event_name", "Unknown event")
-    state = payload.get("state", "UNKNOWN")
-    base_uncertainty = payload.get("base_uncertainty", 0.0)
-    confidence_score = payload.get("confidence_score", 0.0)
-    dominant_risk_skew = payload.get("dominant_risk_skew", "UNKNOWN")
-    trade_restrictions = payload.get("trade_restrictions", {})
+    event_name          = payload.get("event_name", "Unknown event")
+    state               = payload.get("state", "UNKNOWN")
+    base_uncertainty    = payload.get("base_uncertainty", 0.0)
+    confidence_score    = payload.get("confidence_score", 0.0)
+    dominant_risk_skew  = payload.get("dominant_risk_skew", "UNKNOWN")
+    trade_restrictions  = payload.get("trade_restrictions", {})
 
     uncertainty_label = (
-        "high" if base_uncertainty >= 0.75 else
-        "moderate" if base_uncertainty >= 0.55 else
+        "high"     if base_uncertainty  >= 0.75 else
+        "moderate" if base_uncertainty  >= 0.55 else
         "lower"
     )
     confidence_label = (
-        "strong" if confidence_score >= 0.75 else
-        "moderate" if confidence_score >= 0.55 else
+        "strong"   if confidence_score  >= 0.75 else
+        "moderate" if confidence_score  >= 0.55 else
         "limited"
     )
 
@@ -25,44 +28,41 @@ def _fallback_reasoning(payload: dict[str, Any]) -> str:
         f"{event_name} is currently in {state} state. "
         f"Macro uncertainty is {uncertainty_label} and model confidence is {confidence_label}. "
         f"Current risk skew is {dominant_risk_skew}. "
-        f"Trade settings currently allow_trade={trade_restrictions.get('allow_trade')}, "
+        f"Trade settings — allow_trade={trade_restrictions.get('allow_trade')}, "
         f"size_multiplier={trade_restrictions.get('size_multiplier')}, "
         f"leverage_cap={trade_restrictions.get('leverage_cap')}. "
-        f"This is fallback reasoning because Gemini output was unavailable."
+        f"(Fallback reasoning — AI layer unavailable.)"
     )
 
 
 def build_ai_reasoning(payload: dict[str, Any]) -> str:
     """
-    Gemini-powered commentary layer for:
+    Groq-powered macro commentary for:
     - macro summary
     - trader commentary
-    - explanation of scenario outputs
+    - scenario explanation
 
-    Safe fallback is returned if:
-    - google-genai is not installed
-    - GEMINI_API_KEY is missing
-    - Gemini request fails
+    Falls back to rule-based text if Groq is unavailable.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         return _fallback_reasoning(payload)
 
     try:
-        from google import genai
-    except Exception:
+        from groq import Groq
+    except ImportError:
         return _fallback_reasoning(payload)
 
     try:
-        client = genai.Client(api_key=api_key)
+        client = Groq(api_key=api_key)
 
-        event_name = payload.get("event_name")
-        state = payload.get("state")
-        base_uncertainty = payload.get("base_uncertainty")
-        confidence_score = payload.get("confidence_score")
-        dominant_risk_skew = payload.get("dominant_risk_skew")
-        trade_restrictions = payload.get("trade_restrictions", {})
-        scenarios = payload.get("scenarios", [])
+        event_name          = payload.get("event_name")
+        state               = payload.get("state")
+        base_uncertainty    = payload.get("base_uncertainty")
+        confidence_score    = payload.get("confidence_score")
+        dominant_risk_skew  = payload.get("dominant_risk_skew")
+        trade_restrictions  = payload.get("trade_restrictions", {})
+        scenarios           = payload.get("scenarios", [])
 
         scenario_lines = []
         for i, s in enumerate(scenarios, start=1):
@@ -75,21 +75,19 @@ def build_ai_reasoning(payload: dict[str, Any]) -> str:
                 f"btc_volatility={s.get('expected_btc_reaction', {}).get('volatility')}"
             )
 
-        prompt = f"""
-You are a macro trading analyst writing BTC-specific commentary for a trading terminal.
+        prompt = f"""You are a macro trading analyst writing BTC-specific commentary for a professional trading terminal.
 
 Write a concise response with exactly 3 short paragraphs:
-1) Macro summary
-2) Trader commentary
-3) Scenario explanation
+1) Macro summary — what this event means for markets
+2) Trader commentary — what a BTC trader should be thinking right now
+3) Scenario explanation — briefly explain the dominant scenario and its implications
 
 Rules:
 - Be concrete, not fluffy.
-- Do not invent data.
-- Use only the structured input below.
+- Do not invent data not in the input.
 - Mention whether risk conditions favor caution or selective participation.
 - Keep it under 170 words total.
-- No bullet points.
+- No bullet points. Prose only.
 
 Structured input:
 event_name: {event_name}
@@ -97,22 +95,39 @@ state: {state}
 base_uncertainty: {base_uncertainty}
 confidence_score: {confidence_score}
 dominant_risk_skew: {dominant_risk_skew}
-trade_restrictions: {trade_restrictions}
+allow_trade: {trade_restrictions.get('allow_trade')}
+size_multiplier: {trade_restrictions.get('size_multiplier')}
+leverage_cap: {trade_restrictions.get('leverage_cap')}
 
 Scenarios:
-{chr(10).join(scenario_lines)}
-""".strip()
+{chr(10).join(scenario_lines)}"""
 
-        response = client.models.generate_content(
-            model="gemini-3-flash-preview",
-            contents=prompt,
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a senior macro trading analyst writing professional, "
+                        "concise BTC-focused commentary for a Bloomberg-style terminal. "
+                        "Be direct, data-driven, and avoid hype."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            temperature=0.3,
+            max_tokens=300,
         )
 
-        text = getattr(response, "text", None)
+        text = response.choices[0].message.content
         if text and text.strip():
             return text.strip()
 
         return _fallback_reasoning(payload)
 
-    except Exception:
+    except Exception as e:
+        print(f"[AI Reasoning ERROR] {e}")
         return _fallback_reasoning(payload)
