@@ -7,10 +7,6 @@ DB_PATH = "database/btc_terminal.db"
 
 
 def _historical_surprise_probs(event_name: str) -> dict:
-    """
-    Returns historical probability buckets for supported events.
-    """
-
     if event_name == "US CPI":
         cpi = build_cpi_probabilities("2024", "2026")
         if cpi["available"]:
@@ -31,7 +27,6 @@ def _historical_surprise_probs(event_name: str) -> dict:
             }
         return {"available": False, "probs": None, "n": nfp["historical_samples"]}
 
-    # fallback: DB-based method for future expansion
     conn = sqlite3.connect(DB_PATH)
     df = pd.read_sql(
         """
@@ -276,7 +271,13 @@ def build_scenarios(event: dict) -> dict:
     event_type = event.get("event_type") or "UNKNOWN"
 
     hist = _historical_surprise_probs(event_name)
-    probs = hist["probs"] if hist["available"] else {"UP": None, "INLINE": None, "DOWN": None}
+
+    if hist["available"] and hist["probs"]:
+        probs = hist["probs"]
+        probability_available = True
+    else:
+        probs = {"UP": None, "INLINE": None, "DOWN": None}
+        probability_available = False
 
     if event_name == "US CPI":
         scenarios = _build_cpi_scenarios(probs)
@@ -297,4 +298,5 @@ def build_scenarios(event: dict) -> dict:
         "probability_method": method,
         "historical_samples": hist["n"],
         "event_type": event_type,
+        "probability_available": probability_available
     }

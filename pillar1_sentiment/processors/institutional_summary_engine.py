@@ -1,7 +1,9 @@
 import json
 import os
-from google import genai
-from google.genai import types
+from dotenv import load_dotenv
+from groq import Groq
+
+load_dotenv()
 
 def generate_institutional_summary(articles, aggregate_result):
     """
@@ -9,53 +11,56 @@ def generate_institutional_summary(articles, aggregate_result):
     aggregate_result: output from aggregator
     """
 
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
+        raise RuntimeError("GROQ_API_KEY not set in environment")
 
-    # Initialize Gemini client (NEW SDK)
-    client = genai.Client(api_key=api_key)
+    client = Groq(api_key=api_key)
 
-    # UPDATED: Using 'gemini-2.5-flash' for 2026 performance and reliability.
-    # If you need high-level reasoning, use 'gemini-3-pro-preview'.
-    MODEL_ID = "gemini-2.5-flash"
+    prompt = f"""You are a senior institutional financial strategist.
+Below is verified institutional market information with quantified sentiment.
 
-    prompt = f"""
-    You are a senior institutional financial strategist.
-    Below is verified institutional market information with quantified sentiment.
+RAW ARTICLES:
+{json.dumps(articles, indent=2)}
 
-    RAW ARTICLES:
-    {json.dumps(articles, indent=2)}
+AGGREGATED SENTIMENT:
+{json.dumps(aggregate_result, indent=2)}
 
-    AGGREGATED SENTIMENT:
-    {json.dumps(aggregate_result, indent=2)}
+TASK:
+Summarize the institutional sentiment in 4-5 professional bullet points.
 
-    TASK:
-    Summarize the institutional sentiment in 4–5 professional bullet points.
-
-    RULES:
-    - No hype
-    - No price targets
-    - No trading advice
-    - Focus on macro tone, policy risk, and institutional behavior
-    - Write like a Bloomberg macro note
-    """
+RULES:
+- No hype
+- No price targets
+- No trading advice
+- Focus on macro tone, policy risk, and institutional behavior
+- Write like a Bloomberg macro note
+- Start each bullet point with a dash (-)"""
 
     try:
-        # The generate_content method in the new SDK
-        response = client.models.generate_content(
-            model=MODEL_ID,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.3, # Low temperature for professional, factual tone
-            )
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a senior institutional financial strategist writing Bloomberg-style macro notes. Be concise, professional, and data-driven."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=500,
         )
-        return response.text.strip()
+        return response.choices[0].message.content.strip()
+
     except Exception as e:
         return f"API Error: {str(e)}"
 
+
 # Quick test block
 if __name__ == "__main__":
-    test_articles = [{"title": "Fed Interest Rate Decision", "content": "The Fed held rates steady..."}]
-    test_aggregate = {"sentiment": "Neutral/Hawkish", "score": 0.65}
+    test_articles = [{"headline": "Fed holds rates steady amid inflation concerns", "sentiment": "negative", "confidence": 0.82, "source": "Federal Reserve"}]
+    test_aggregate = {"sentiment": "neutral", "confidence": 0.45, "drivers": ["Fed policy uncertainty", "ETF inflows"]}
     print(generate_institutional_summary(test_articles, test_aggregate))

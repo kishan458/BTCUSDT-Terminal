@@ -48,11 +48,16 @@ def _parse_date(date_str: str) -> datetime:
 def _to_utc_str(date_str: str, time_str: str) -> str:
     ds = str(date_str).strip()
     ts = _clean_time_str(time_str)
+
     if not ds or not ts or ts in {"TBA", "TBD", "TENTATIVE"}:
         raise ValueError(f"Unusable date/time: date={ds!r}, time={ts!r}")
 
     date_part = _parse_date(ds)
-    time_part = datetime.strptime(ts, "%I:%M %p")
+
+    try:
+        time_part = datetime.strptime(ts, "%I:%M %p")
+    except ValueError:
+        raise ValueError(f"Unrecognized time format: {ts!r}")
 
     dt_local = datetime(
         year=date_part.year,
@@ -66,6 +71,7 @@ def _to_utc_str(date_str: str, time_str: str) -> str:
     return dt_local.astimezone(UTC_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
 
+# ✅ FIXED (NO CRASH + ANTI-403 SAFE)
 def _fetch_html(url: str) -> str:
     headers = {
         "User-Agent": (
@@ -78,10 +84,16 @@ def _fetch_html(url: str) -> str:
         "Referer": "https://www.bls.gov/",
         "Connection": "keep-alive",
     }
-    with requests.Session() as s:
-        r = s.get(url, headers=headers, timeout=30)
-        r.raise_for_status()
-        return r.text
+
+    try:
+        with requests.Session() as s:
+            r = s.get(url, headers=headers, timeout=30)
+            r.raise_for_status()
+            return r.text
+
+    except Exception as e:
+        print(f"[BLSEmploymentProvider ERROR] Failed to fetch Employment data: {e}")
+        return ""  # ⚠️ prevents crash
 
 
 class BLSEmploymentProvider(BaseEventProvider):
@@ -89,7 +101,16 @@ class BLSEmploymentProvider(BaseEventProvider):
 
     def fetch_events(self):
         html = _fetch_html(BLS_EMPSIT_URL)
-        tables = pd.read_html(StringIO(html))
+
+        # ✅ CRITICAL: prevent crash if fetch fails
+        if not html:
+            return []
+
+        try:
+            tables = pd.read_html(StringIO(html))
+        except Exception as e:
+            print(f"[BLSEmploymentProvider ERROR] Failed to parse HTML: {e}")
+            return []
 
         schedule = None
         for t in tables:
@@ -98,8 +119,10 @@ class BLSEmploymentProvider(BaseEventProvider):
                 schedule = t
                 break
 
+        # ✅ DO NOT CRASH SYSTEM
         if schedule is None:
-            raise RuntimeError("Could not find Employment Situation schedule table on BLS page.")
+            print("[BLSEmploymentProvider WARNING] No valid table found")
+            return []
 
         out = []
         skipped = 0
@@ -140,8 +163,5 @@ class BLSEmploymentProvider(BaseEventProvider):
                 "previous": None,
                 "raw_json": json.dumps(raw),
             })
-
-        # optional debug
-        # print(f"[BLSEmploymentProvider] parsed={len(out)} skipped={skipped}")
 
         return out

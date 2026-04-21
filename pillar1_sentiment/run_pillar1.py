@@ -96,7 +96,7 @@ if __name__ == "__main__":
     )
     table.add_row(
         "Model Confidence",
-        f"{result['aggregate_sentiment']['confidence']:.2%}"
+        f"{result['aggregate_sentiment']['confidence'] * 100:.1f}%"
     )
     table.add_row(
         "Articles Analyzed",

@@ -1,9 +1,10 @@
 import sqlite3
 from typing import List, Dict
+
 from pillar6_high_impact_events.providers.base_provider import BaseEventProvider
+from core.db import resolve_db_path
 
-
-DB_PATH = "database/btc_terminal.db"
+DB_PATH = str(resolve_db_path())
 
 UPSERT_SQL = """
 INSERT INTO macro_events (
@@ -26,36 +27,37 @@ ON CONFLICT(event_uid) DO UPDATE SET
   updated_at=CURRENT_TIMESTAMP;
 """
 
+
 def upsert_events(events: List[Dict]) -> int:
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     n = 0
 
     for ev in events:
-        cur.execute(UPSERT_SQL, (
-            ev["event_uid"],
-            ev["provider"],
-            ev.get("provider_event_id"),
-            ev["event_name"],
-            ev.get("event_type"),
-            ev.get("country"),
-            ev["scheduled_time_utc"],
-            ev.get("importance"),
-            ev.get("actual"),
-            ev.get("forecast"),
-            ev.get("previous"),
-            ev["raw_json"],
-        ))
+        cur.execute(
+            UPSERT_SQL,
+            (
+                ev["event_uid"],
+                ev["provider"],
+                ev.get("provider_event_id"),
+                ev["event_name"],
+                ev.get("event_type"),
+                ev.get("country"),
+                ev["scheduled_time_utc"],
+                ev.get("importance"),
+                ev.get("actual"),
+                ev.get("forecast"),
+                ev.get("previous"),
+                ev["raw_json"],
+            ),
+        )
         n += 1
 
     conn.commit()
     conn.close()
     return n
 
+
 def ingest(provider: BaseEventProvider) -> int:
-    """
-    Fetches events from provider (LEGIT source), normalizes inside provider,
-    and upserts them into macro_events.
-    """
     events = provider.fetch_events()
     return upsert_events(events)
