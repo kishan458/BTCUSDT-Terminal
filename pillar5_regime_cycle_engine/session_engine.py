@@ -2,7 +2,8 @@ import sqlite3
 import pandas as pd
 from datetime import datetime, timezone
 
-DB_PATH = "database/btc_terminal.db"
+from core.db import resolve_db_path
+DB_PATH = str(resolve_db_path())
 
 
 def _load_recent_price_data(limit: int = 48) -> pd.DataFrame:
@@ -42,9 +43,9 @@ def _get_current_session(now_utc: datetime) -> str:
 
 def _session_schedule(current_session: str) -> list[dict]:
     sessions = [
-        {"name": "ASIA", "start_utc": "00:00", "end_utc": "08:00", "active": False},
-        {"name": "LONDON", "start_utc": "08:00", "end_utc": "13:00", "active": False},
-        {"name": "NEW_YORK", "start_utc": "13:00", "end_utc": "22:00", "active": False},
+        {"name": "ASIA",       "start_utc": "00:00", "end_utc": "08:00", "active": False},
+        {"name": "LONDON",     "start_utc": "08:00", "end_utc": "13:00", "active": False},
+        {"name": "NEW_YORK",   "start_utc": "13:00", "end_utc": "22:00", "active": False},
         {"name": "LATE_HOURS", "start_utc": "22:00", "end_utc": "00:00", "active": False},
     ]
 
@@ -68,12 +69,12 @@ def _session_hour_bounds(session_name: str) -> tuple[int, int]:
 def build_session_context() -> dict:
     df = _load_recent_price_data()
 
-    now_utc = datetime.now(timezone.utc)
+    now_utc         = datetime.now(timezone.utc)
     current_session = _get_current_session(now_utc)
     start_hour, end_hour = _session_hour_bounds(current_session)
 
     df["dt"] = pd.to_datetime(df["timestamp"], utc=True)
-    today = now_utc.date()
+    today    = now_utc.date()
 
     if current_session == "LATE_HOURS":
         session_df = df[
@@ -88,18 +89,18 @@ def build_session_context() -> dict:
         ]
 
     if session_df.empty:
-        latest = df.iloc[-1]
+        latest      = df.iloc[-1]
         session_high = float(latest["high"])
-        session_low = float(latest["low"])
+        session_low  = float(latest["low"])
     else:
         session_high = float(session_df["high"].max())
-        session_low = float(session_df["low"].min())
+        session_low  = float(session_df["low"].min())
 
     return {
         "session_context": {
             "current_session": current_session,
-            "sessions": _session_schedule(current_session),
-            "session_high": session_high,
-            "session_low": session_low,
+            "sessions":        _session_schedule(current_session),
+            "session_high":    session_high,
+            "session_low":     session_low,
         }
     }
