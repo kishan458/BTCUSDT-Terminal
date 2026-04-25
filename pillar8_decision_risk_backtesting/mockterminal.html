@@ -1,0 +1,1180 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTC/USDT Terminal</title>
+<!-- TradingView -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<!-- Chart.js for sentiment history -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:        #0d0d0d;
+    --bg2:       #141414;
+    --bg3:       #1a1a1a;
+    --border:    #252525;
+    --border2:   #2e2e2e;
+    --text:      #e8e8e8;
+    --text2:     #888;
+    --text3:     #555;
+    --green:     #3ddc84;
+    --green-dim: #1a4d35;
+    --red:       #ff4d4d;
+    --red-dim:   #4d1a1a;
+    --yellow:    #f0c040;
+    --yellow-dim:#4d3d10;
+    --blue:      #4d9fff;
+    --blue-dim:  #1a3d66;
+    --white:     #ffffff;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 44px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .topbar-left { display: flex; align-items: center; gap: 24px; }
+
+  .logo {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--text3);
+    text-transform: uppercase;
+  }
+
+  .price-block { display: flex; align-items: baseline; gap: 8px; }
+
+  .price {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    transition: color 0.3s ease;
+  }
+
+  .price.up   { color: var(--green); }
+  .price.down { color: var(--red); }
+  .price.flat { color: var(--white); }
+
+  .price-change { font-size: 12px; font-weight: 500; transition: color 0.3s ease; }
+  .price-change.up   { color: var(--green); }
+  .price-change.down { color: var(--red); }
+
+  .price-flash-up {
+    animation: flashGreen 0.4s ease;
+  }
+  .price-flash-down {
+    animation: flashRed 0.4s ease;
+  }
+
+  @keyframes flashGreen {
+    0%   { background: rgba(61,220,132,0.25); }
+    100% { background: transparent; }
+  }
+  @keyframes flashRed {
+    0%   { background: rgba(255,77,77,0.25); }
+    100% { background: transparent; }
+  }
+
+  .topbar-meta { display: flex; align-items: center; gap: 20px; }
+
+  .meta-chip { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+
+  .meta-chip .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  .meta-chip .dot.warn { background: var(--yellow); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .event-chip {
+    background: var(--yellow-dim);
+    border: 1px solid var(--yellow);
+    color: var(--yellow);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .refresh-btn:hover { border-color: var(--text2); color: var(--text); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 0;
+    overflow-x: auto;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--text); border-bottom-color: var(--white); }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; overflow: hidden; display: flex; }
+
+  .panel { display: none; width: 100%; height: 100%; overflow-y: auto; padding: 16px; gap: 16px; }
+  .panel.active { display: flex; }
+  .panel::-webkit-scrollbar { width: 4px; }
+  .panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── COLUMNS ── */
+  .col { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── SECTION ── */
+  .section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 14px;
+  }
+
+  .section-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* ── TRADINGVIEW CHART ── */
+  .tv-container {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    flex-shrink: 0;
+    .tv-container {
+    display: flex;
+    align-items: flex-start;
+    }
+  }
+
+  /* ── VERDICT ── */
+  .verdict-action {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .verdict-action.long    { color: var(--green); }
+  .verdict-action.no-trade{ color: var(--red); }
+  .verdict-action.watch   { color: var(--yellow); }
+
+  .verdict-sub { font-size: 11px; color: var(--text2); margin-bottom: 16px; }
+
+  .verdict-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .verdict-item-label {
+    font-size: 9px; color: var(--text3);
+    letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px;
+  }
+  .verdict-item-value { font-size: 14px; font-weight: 500; color: var(--text); cursor: help; }
+  .verdict-item-value.green  { color: var(--green); }
+  .verdict-item-value.red    { color: var(--red); }
+  .verdict-item-value.yellow { color: var(--yellow); }
+
+  /* ── SIGNAL ROWS ── */
+  .signal-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.1s;
+  }
+  .signal-row:last-child { border-bottom: none; }
+  .signal-row:hover { background: var(--bg3); margin: 0 -14px; padding: 7px 14px; }
+
+  .signal-left { display: flex; align-items: center; gap: 10px; }
+  .signal-pillar { font-size: 9px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; width: 58px; }
+
+  .signal-bar-wrap { width: 55px; height: 3px; background: var(--border); border-radius: 1px; overflow: hidden; }
+  .signal-bar { height: 100%; border-radius: 1px; transition: width 0.5s ease; }
+  .signal-bar.green  { background: var(--green); }
+  .signal-bar.red    { background: var(--red); }
+  .signal-bar.yellow { background: var(--yellow); }
+  .signal-bar.dim    { background: var(--text3); }
+
+  .signal-state { font-size: 11px; font-weight: 500; }
+  .signal-state.green  { color: var(--green); }
+  .signal-state.red    { color: var(--red); }
+  .signal-state.yellow { color: var(--yellow); }
+  .signal-state.dim    { color: var(--text2); }
+  .signal-arrow { font-size: 13px; width: 14px; text-align: center; color: var(--text3); }
+
+  /* ── KV ROWS ── */
+  .kv-block { display: flex; flex-direction: column; }
+  .kv-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; gap: 12px;
+  }
+  .kv-row:last-child { border-bottom: none; }
+  .kv-key { color: var(--text2); flex-shrink: 0; }
+  .kv-val { color: var(--text); font-weight: 500; text-align: right; }
+  .kv-val.green  { color: var(--green); }
+  .kv-val.red    { color: var(--red); }
+  .kv-val.yellow { color: var(--yellow); }
+
+  /* ── EXEC ROWS ── */
+  .exec-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; gap: 12px; }
+  .exec-row:last-child { border-bottom: none; }
+  .exec-key { color: var(--text2); flex-shrink: 0; }
+  .exec-val { color: var(--text); font-weight: 500; text-align: right; max-width: 60%; }
+
+  /* ── INVALIDATORS ── */
+  .invalidator-row { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 11px; color: var(--text2); border-bottom: 1px solid var(--border); }
+  .invalidator-row:last-child { border-bottom: none; }
+  .inv-bullet { color: var(--text3); flex-shrink: 0; }
+
+  /* ── WARNINGS ── */
+  .warning-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--yellow-dim); border-left: 2px solid var(--yellow); margin-bottom: 6px; font-size: 11px; color: var(--yellow); }
+  .warning-row:last-child { margin-bottom: 0; }
+
+  /* ── ALIGNMENT ── */
+  .align-comp-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .align-comp-row:last-child { border-bottom: none; }
+  .align-comp-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .align-pillar { color: var(--text3); width: 68px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.08em; }
+  .align-track { flex: 1; height: 3px; background: var(--border); border-radius: 1px; position: relative; overflow: visible; }
+  .align-fill { position: absolute; top: 0; height: 100%; border-radius: 1px; transition: all 0.5s ease; }
+  .align-fill.long  { background: var(--green); left: 50%; }
+  .align-fill.short { background: var(--red); right: 50%; }
+  .align-center-mark { position: absolute; left: 50%; top: -2px; width: 1px; height: 7px; background: var(--border2); transform: translateX(-50%); }
+  .align-label { color: var(--text2); width: 80px; text-align: right; font-size: 11px; }
+  .align-label.green { color: var(--green); }
+  .align-label.red   { color: var(--red); }
+  .align-label.dim   { color: var(--text3); }
+
+  /* ── SENTIMENT CHART ── */
+  .chart-container {
+    position: relative;
+    height: 180px;
+    width: 100%;
+  }
+
+  /* ── NEWS HEADLINES ── */
+  .headline-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .headline-row:last-child { border-bottom: none; }
+
+  .headline-sentiment {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .headline-sentiment.pos { background: var(--green); }
+  .headline-sentiment.neg { background: var(--red); }
+  .headline-sentiment.neu { background: var(--text3); }
+
+  .headline-text { color: var(--text2); flex: 1; line-height: 1.5; }
+  .headline-source { color: var(--text3); font-size: 10px; flex-shrink: 0; white-space: nowrap; }
+
+  /* ── SCENARIO CARDS ── */
+  .scenario-card { border: 1px solid var(--border); padding: 12px 14px; margin-bottom: 8px; }
+  .scenario-card:last-child { margin-bottom: 0; }
+  .scenario-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .scenario-case { font-size: 12px; font-weight: 500; }
+  .scenario-prob { font-size: 11px; color: var(--text2); }
+  .scenario-body { font-size: 11px; color: var(--text2); line-height: 1.5; }
+  .scenario-move { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 2px 6px; margin-top: 6px; }
+  .scenario-move.up   { background: var(--green-dim); color: var(--green); }
+  .scenario-move.down { background: var(--red-dim);   color: var(--red); }
+  .scenario-move.neutral { background: var(--border); color: var(--text2); }
+
+  /* ── RISK GAUGE ── */
+  .risk-gauge { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .risk-score-big { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; }
+  .risk-score-big.low      { color: var(--green); }
+  .risk-score-big.moderate { color: var(--yellow); }
+  .risk-score-big.high     { color: var(--red); }
+  .risk-state-label { font-size: 11px; color: var(--text2); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .comp-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 11px; }
+  .comp-bar-label { color: var(--text2); width: 100px; flex-shrink: 0; }
+  .comp-bar-track { flex: 1; height: 4px; background: var(--border); border-radius: 1px; overflow: hidden; }
+  .comp-bar-fill { height: 100%; border-radius: 1px; background: var(--yellow); transition: width 0.5s ease; }
+  .comp-bar-fill.low  { background: var(--green); }
+  .comp-bar-fill.high { background: var(--red); }
+  .comp-bar-val { color: var(--text2); width: 36px; text-align: right; flex-shrink: 0; }
+
+  /* ── AI TEXT ── */
+  .ai-text { font-family: var(--sans); font-size: 12px; line-height: 1.7; color: var(--text2); font-weight: 300; }
+  .ai-text p { margin-bottom: 10px; }
+  .ai-text p:last-child { margin-bottom: 0; }
+
+  /* ── COUNTDOWN ── */
+  .countdown-big { font-size: 32px; font-weight: 600; letter-spacing: -0.03em; color: var(--yellow); margin-bottom: 4px; }
+  .uncertainty-bar-wrap { width: 100%; height: 6px; background: var(--border); border-radius: 1px; margin: 12px 0 4px; overflow: hidden; }
+  .uncertainty-bar { height: 100%; background: linear-gradient(90deg, var(--green), var(--yellow), var(--red)); border-radius: 1px; transition: width 0.5s ease; }
+  .uncertainty-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--text3); letter-spacing: 0.08em; }
+
+  /* ── STATUS BAR ── */
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 0 20px; height: 26px; background: var(--bg2); border-top: 1px solid var(--border); flex-shrink: 0; }
+  .status-left, .status-right { display: flex; align-items: center; gap: 16px; }
+  .status-item { font-size: 10px; color: var(--text3); letter-spacing: 0.05em; }
+  .status-item span { color: var(--text2); }
+
+  /* ── TOOLTIP via title attr ── */
+  [title] { cursor: help; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">BTC/USDT ◆</div>
+    <div class="price-block">
+      <div class="price flat" id="btc-price">$94,210.00</div>
+      <div class="price-change up" id="btc-change">+2.1% (24h)</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3)">
+      H <span id="price-high" style="color:var(--text2)">$95,100</span>
+      &nbsp;L <span id="price-low" style="color:var(--text2)">$92,800</span>
+    </div>
+  </div>
+  <div class="topbar-meta">
+    <div class="meta-chip"><div class="dot"></div><span id="session-label">ASIA SESSION</span></div>
+    <div class="event-chip" id="event-chip">⚡ FOMC IN 5D</div>
+    <div class="meta-chip"><div class="dot warn"></div><span id="last-update">Live</span></div>
+    <button class="refresh-btn" onclick="simulateRefresh()">↻ Refresh All</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('main',this)">Overview</div>
+  <div class="tab" onclick="switchTab('p1',this)">P1 · Sentiment</div>
+  <div class="tab" onclick="switchTab('p2',this)">P2 · Memory</div>
+  <div class="tab" onclick="switchTab('p3',this)">P3 · Structure</div>
+  <div class="tab" onclick="switchTab('p4',this)">P4 · Candle</div>
+  <div class="tab" onclick="switchTab('p5',this)">P5 · Regime</div>
+  <div class="tab" onclick="switchTab('p6',this)">P6 · Events</div>
+  <div class="tab" onclick="switchTab('p7',this)">P7 · Council</div>
+  <div class="tab" onclick="switchTab('p8',this)">P8 · Decision</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- ══════════════════════════════════════════════════
+       OVERVIEW — Main Page
+  ══════════════════════════════════════════════════ -->
+  <div class="panel active" id="panel-main" style="flex-direction:column;padding:0;overflow:hidden;">
+
+    <!-- TOP ROW: Chart + Verdict + Signals -->
+    <div style="display:flex;flex:1;overflow:hidden;gap:0;border-bottom:1px solid var(--border)">
+
+      <!-- CHART (25% width) -->
+      <div class="tv-container" style="width:50%;flex-shrink:0;border-right:1px solid var(--border)">
+        <div id="tradingview_chart" style="height:500px;width:100%"></div>
+      </div>
+
+      <!-- VERDICT (middle) -->
+      <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;border-right:1px solid var(--border)">
+
+        <div class="section" style="flex-shrink:0">
+          <div class="section-label">Verdict</div>
+          <div class="verdict-action long">PROBE LONG</div>
+          <div class="verdict-sub">Trend Long · FOMC caution · Moderate Risk</div>
+          <div class="verdict-grid">
+            <div class="verdict-item">
+              <div class="verdict-item-label">Risk</div>
+              <div class="verdict-item-value yellow" title="Raw: 0.408">MODERATE</div>
+            </div>
+            <div class="verdict-item">
+              <div class="verdict-item-label">Size</div>
+              <div class="verdict-item-value" title="0.004 fraction">0.4%</div>
+            </div>
+            <div class="verdict-item">
+              <div class="verdict-item-label">Leverage</div>
+              <div class="verdict-item-value" title="1.28× max allowed">1.3×</div>
+            </div>
+            <div class="verdict-item">
+              <div class="verdict-item-label">Confidence</div>
+              <div class="verdict-item-value red" title="0.176 raw score">LOW</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="flex-shrink:0">
+          <div class="section-label">Execution</div>
+          <div class="exec-row"><div class="exec-key">Entry</div><div class="exec-val">Probe on confirmation</div></div>
+          <div class="exec-row"><div class="exec-key">Stop</div><div class="exec-val">Structure + vol stop</div></div>
+          <div class="exec-row"><div class="exec-key">Target</div><div class="exec-val">$69,988 liquidity</div></div>
+          <div class="exec-row"><div class="exec-key">Time stop</div><div class="exec-val">4 bars</div></div>
+        </div>
+
+        <div class="section" style="flex-shrink:0">
+          <div class="section-label">Invalidators</div>
+          <div class="invalidator-row"><div class="inv-bullet">—</div><div>Edge flips away from LONG across pillars</div></div>
+          <div class="invalidator-row"><div class="inv-bullet">—</div><div>Breakout acceptance fails after entry</div></div>
+          <div class="invalidator-row"><div class="inv-bullet">—</div><div>Event uncertainty expands further</div></div>
+        </div>
+
+        <div class="section" style="flex-shrink:0">
+          <div class="section-label">Warnings</div>
+          <div class="warning-row"><span>⚠</span><span>EVENT_UNCERTAINTY_ELEVATED — FOMC April 29</span></div>
+          <div class="warning-row"><span>⚠</span><span>Candle follow-through weak — avoid chasing</span></div>
+          <div class="warning-row"><span>⚠</span><span>Momentum stalling — wait for re-acceleration</span></div>
+        </div>
+
+      </div>
+
+      <!-- SIGNALS (right) -->
+      <div style="width:260px;flex-shrink:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+
+        <div class="section" style="flex-shrink:0">
+          <div class="section-label">Pillar Signals</div>
+          <div class="signal-row" onclick="switchTab('p1',document.querySelectorAll('.tab')[1])">
+            <div class="signal-left">
+              <div class="signal-pillar">P1 Sent</div>
+              <div class="signal-bar-wrap"><div class="signal-bar dim" style="width:50%"></div></div>
+            </div>
+            <div class="signal-state dim">NEUTRAL</div>
+            <div class="signal-arrow">→</div>
+          </div>
+          <div class="signal-row" onclick="switchTab('p2',document.querySelectorAll('.tab')[2])">
+            <div class="signal-left">
+              <div class="signal-pillar">P2 Mem</div>
+              <div class="signal-bar-wrap"><div class="signal-bar red" style="width:60%"></div></div>
+            </div>
+            <div class="signal-state red">MEAN REV</div>
+            <div class="signal-arrow">↓</div>
+          </div>
+          <div class="signal-row" onclick="switchTab('p3',document.querySelectorAll('.tab')[3])">
+            <div class="signal-left">
+              <div class="signal-pillar">P3 Struct</div>
+              <div class="signal-bar-wrap"><div class="signal-bar dim" style="width:45%"></div></div>
+            </div>
+            <div class="signal-state dim">MIXED</div>
+            <div class="signal-arrow">→</div>
+          </div>
+          <div class="signal-row" onclick="switchTab('p4',document.querySelectorAll('.tab')[4])">
+            <div class="signal-left">
+              <div class="signal-pillar">P4 Cndl</div>
+              <div class="signal-bar-wrap"><div class="signal-bar green" style="width:40%"></div></div>
+            </div>
+            <div class="signal-state green">BUY ABS</div>
+            <div class="signal-arrow">↑</div>
+          </div>
+          <div class="signal-row" onclick="switchTab('p5',document.querySelectorAll('.tab')[5])">
+            <div class="signal-left">
+              <div class="signal-pillar">P5 Regime</div>
+              <div class="signal-bar-wrap"><div class="signal-bar green" style="width:90%"></div></div>
+            </div>
+            <div class="signal-state green">STR UP</div>
+            <div class="signal-arrow">↑↑</div>
+          </div>
+          <div class="signal-row" onclick="switchTab('p6',document.querySelectorAll('.tab')[6])">
+            <div class="signal-left">
+              <div class="signal-pillar">P6 Event</div>
+              <div class="signal-bar-wrap"><div class="signal-bar yellow" style="width:76%"></div></div>
+            </div>
+            <div class="signal-state yellow">FOMC 5D</div>
+            <div class="signal-arrow">⚡</div>
+          </div>
+          <div class="signal-row" onclick="switchTab('p7',document.querySelectorAll('.tab')[7])">
+            <div class="signal-left">
+              <div class="signal-pillar">P7 Council</div>
+              <div class="signal-bar-wrap"><div class="signal-bar dim" style="width:25%"></div></div>
+            </div>
+            <div class="signal-state dim">NO TRD</div>
+            <div class="signal-arrow">—</div>
+          </div>
+          <div class="signal-row" onclick="switchTab('p8',document.querySelectorAll('.tab')[8])">
+            <div class="signal-left">
+              <div class="signal-pillar">P8 Dcsn</div>
+              <div class="signal-bar-wrap"><div class="signal-bar green" style="width:45%"></div></div>
+            </div>
+            <div class="signal-state green">PRB LNG</div>
+            <div class="signal-arrow">↑</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-label">Alignment</div>
+          <div class="align-comp-row">
+            <div class="align-comp-left">
+              <div class="align-pillar">Sentiment</div>
+              <div class="align-track"><div class="align-center-mark"></div><div class="align-fill long" style="width:0%"></div></div>
+            </div>
+            <div class="align-label dim">·</div>
+          </div>
+          <div class="align-comp-row">
+            <div class="align-comp-left">
+              <div class="align-pillar">Memory</div>
+              <div class="align-track"><div class="align-center-mark"></div><div class="align-fill short" style="width:0%"></div></div>
+            </div>
+            <div class="align-label dim">·</div>
+          </div>
+          <div class="align-comp-row">
+            <div class="align-comp-left">
+              <div class="align-pillar">Regime</div>
+              <div class="align-track"><div class="align-center-mark"></div><div class="align-fill long" style="width:45%"></div></div>
+            </div>
+            <div class="align-label green">↑ LONG</div>
+          </div>
+          <div class="align-comp-row">
+            <div class="align-comp-left">
+              <div class="align-pillar">Events</div>
+              <div class="align-track"><div class="align-center-mark"></div><div class="align-fill long" style="width:0%"></div></div>
+            </div>
+            <div class="align-label dim">·</div>
+          </div>
+          <div class="align-comp-row">
+            <div class="align-comp-left">
+              <div class="align-pillar">Council</div>
+              <div class="align-track"><div class="align-center-mark"></div><div class="align-fill long" style="width:0%"></div></div>
+            </div>
+            <div class="align-label dim">·</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       P1 — SENTIMENT
+  ══════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-p1" style="flex-direction:column;gap:16px">
+    <div style="display:flex;gap:16px;flex:1;min-height:0">
+
+      <!-- LEFT -->
+      <div class="col" style="flex:2;overflow-y:auto">
+
+        <div class="section">
+          <div class="section-label">Sentiment Summary</div>
+          <div class="kv-block">
+            <div class="kv-row"><div class="kv-key">Aggregate Sentiment</div><div class="kv-val yellow">NEUTRAL</div></div>
+            <div class="kv-row"><div class="kv-key">Model Confidence</div><div class="kv-val">0.6%</div></div>
+            <div class="kv-row"><div class="kv-key">Articles Analyzed</div><div class="kv-val">58</div></div>
+            <div class="kv-row"><div class="kv-key">Last Updated</div><div class="kv-val" style="color:var(--text3)">09:24 UTC today</div></div>
+          </div>
+        </div>
+
+        <!-- SENTIMENT HISTORY CHART -->
+        <div class="section">
+          <div class="section-label">Sentiment Score — Last 7 Days</div>
+          <div class="chart-container">
+            <canvas id="sentimentChart"></canvas>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:10px;font-size:10px;color:var(--text3)">
+            <span><span style="color:var(--green)">■</span> Positive</span>
+            <span><span style="color:var(--red)">■</span> Negative</span>
+            <span><span style="color:var(--yellow)">■</span> Neutral</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-label">Source Breakdown</div>
+          <div class="kv-block">
+            <div class="kv-row"><div class="kv-key">CoinDesk</div><div class="kv-val">13 articles</div></div>
+            <div class="kv-row"><div class="kv-key">Cointelegraph</div><div class="kv-val">11 articles</div></div>
+            <div class="kv-row"><div class="kv-key">Decrypt</div><div class="kv-val">10 articles</div></div>
+            <div class="kv-row"><div class="kv-key">Federal Reserve</div><div class="kv-val">10 articles</div></div>
+            <div class="kv-row"><div class="kv-key">Ibtimes.com.au</div><div class="kv-val">5 articles</div></div>
+            <div class="kv-row"><div class="kv-key">Others</div><div class="kv-val" style="color:var(--text3)">9 articles</div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Headlines -->
+      <div class="col" style="flex:3;overflow-y:auto">
+
+        <div class="section">
+          <div class="section-label">Institutional Macro Summary (FinBERT + Groq)</div>
+          <div class="ai-text">
+            <p>The overall institutional sentiment remains neutral, driven by a mix of geopolitical tensions, ETF inflows, and crypto market dynamics with low confidence indicating high uncertainty.</p>
+            <p>The Federal Reserve's policy tone remains cautious and data-dependent, focused on stability and prudent risk management. ETF inflows and institutional interest in crypto assets are providing a counterbalance to geopolitical headwinds.</p>
+            <p>Institutional investors are increasingly focused on the intersection of crypto and traditional finance — central bank digital currencies, stablecoins, and tokenized assets reflect a broader trend toward mainstream acceptance.</p>
+          </div>
+        </div>
+
+        <div class="section" style="flex:1;overflow-y:auto">
+          <div class="section-label">News Headlines Used in Analysis (58 articles)</div>
+          <div id="headlines-list">
+
+            <div class="headline-row">
+              <div class="headline-sentiment pos"></div>
+              <div class="headline-text">Bitcoin Price Today: BTC Surges Past $75,000 in 2026 Amid Geopolitical Tensions and ETF Inflows</div>
+              <div class="headline-source">Ibtimes.com</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment pos"></div>
+              <div class="headline-text">Bitcoin Surges Past $75,000 as Geopolitical Easing and ETF Inflows Spark Crypto Rebound</div>
+              <div class="headline-source">Ibtimes.com</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment pos"></div>
+              <div class="headline-text">Bitcoin Surges Past $71,000 as Institutional Inflows, Geopolitical Easing Fuel Rally</div>
+              <div class="headline-source">Ibtimes.com</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment neu"></div>
+              <div class="headline-text">CoinEx Monthly — Repricing Risk and Resilient Bitcoin</div>
+              <div class="headline-source">CoinDesk</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment neg"></div>
+              <div class="headline-text">Ethereum Dips to $2,180 as Ceasefire Rally Fades Amid ETF Inflows and CPI Watch</div>
+              <div class="headline-source">CoinDesk</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment neu"></div>
+              <div class="headline-text">Federal Reserve Maintains Restrictive Policy Stance Amid Inflation Concerns</div>
+              <div class="headline-source">Fed Reserve</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment neu"></div>
+              <div class="headline-text">Powell Signals Data-Dependent Approach as Labor Market Remains Resilient</div>
+              <div class="headline-source">Fed Reserve</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment pos"></div>
+              <div class="headline-text">Spot Bitcoin ETF Inflows Hit $800M in Single Day as Institutional Demand Surges</div>
+              <div class="headline-source">Cointelegraph</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment neg"></div>
+              <div class="headline-text">Crypto Market Faces Pressure as Geopolitical Tensions in Strait of Hormuz Escalate</div>
+              <div class="headline-source">Decrypt</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment neu"></div>
+              <div class="headline-text">Stablecoin Regulation Progress: What the Latest Senate Bill Means for DeFi</div>
+              <div class="headline-source">Cointelegraph</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment pos"></div>
+              <div class="headline-text">BlackRock IBIT Records Strongest Week of Inflows Since January Launch</div>
+              <div class="headline-source">CoinDesk</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment neg"></div>
+              <div class="headline-text">BTC Derivatives Market Shows Elevated Funding Rates — Sign of Overheating?</div>
+              <div class="headline-source">Decrypt</div>
+            </div>
+            <div class="headline-row">
+              <div class="headline-sentiment neu"></div>
+              <div class="headline-text">Central Bank Digital Currency Pilots Expand Across Asia as BIS Report Drops</div>
+              <div class="headline-source">GlobeNewswire</div>
+            </div>
+            <div class="headline-row" style="border-bottom:none;color:var(--text3);font-size:10px;padding-top:10px">
+              + 45 more articles analyzed — run Pillar 1 to see full list
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       P2 — MEMORY (condensed, same as before)
+  ══════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-p2" style="gap:16px">
+    <div class="col" style="flex:2">
+      <div class="section">
+        <div class="section-label">Memory State</div>
+        <div class="kv-block">
+          <div class="kv-row"><div class="kv-key">Memory Bias</div><div class="kv-val red">MEAN_REVERSION_BIAS</div></div>
+          <div class="kv-row"><div class="kv-key">Match Quality</div><div class="kv-val yellow">MODERATE</div></div>
+          <div class="kv-row"><div class="kv-key">Sample Size</div><div class="kv-val">300 analogs</div></div>
+          <div class="kv-row"><div class="kv-key">Headline Confidence</div><div class="kv-val" title="0.7459 raw">0.746</div></div>
+          <div class="kv-row"><div class="kv-key">Next 3-Bar Up Prob</div><div class="kv-val">47.9%</div></div>
+          <div class="kv-row"><div class="kv-key">Next 6-Bar Up Prob</div><div class="kv-val">51.6%</div></div>
+          <div class="kv-row"><div class="kv-key">Continuation Prob</div><div class="kv-val">20.5%</div></div>
+          <div class="kv-row"><div class="kv-key">Mean Reversion Prob</div><div class="kv-val green">61.2%</div></div>
+          <div class="kv-row"><div class="kv-key">Mean MFE 6-Bar</div><div class="kv-val green">+1.25 ATR</div></div>
+          <div class="kv-row"><div class="kv-key">Mean MAE 6-Bar</div><div class="kv-val red">-1.10 ATR</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-label">Temporal Stability</div>
+        <div class="kv-block">
+          <div class="kv-row"><div class="kv-key">Older window</div><div class="kv-val green">UP_BIAS (60.2%)</div></div>
+          <div class="kv-row"><div class="kv-key">Middle window</div><div class="kv-val yellow">MIXED (53.0%)</div></div>
+          <div class="kv-row"><div class="kv-key">Recent window</div><div class="kv-val red">DOWN_BIAS (41.8%)</div></div>
+          <div class="kv-row"><div class="kv-key">Temporal Stability</div><div class="kv-val red">0.000 — unstable</div></div>
+          <div class="kv-row"><div class="kv-key">Regime Dependency</div><div class="kv-val yellow">0.733 — sensitive</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="col" style="flex:3">
+      <div class="section">
+        <div class="section-label">Context Memory Tendencies</div>
+        <div class="kv-block">
+          <div class="kv-row"><div class="kv-key">Session</div><div class="kv-val">MEAN_REVERSION_TENDENCY</div></div>
+          <div class="kv-row"><div class="kv-key">Calendar</div><div class="kv-val">MEAN_REVERSION_TENDENCY</div></div>
+          <div class="kv-row"><div class="kv-key">Weekday-Hour</div><div class="kv-val">MEAN_REVERSION_TENDENCY</div></div>
+          <div class="kv-row"><div class="kv-key">Week Part</div><div class="kv-val">MEAN_REVERSION_TENDENCY</div></div>
+        </div>
+      </div>
+      <div class="section" style="flex:1">
+        <div class="section-label">AI Memory Overview</div>
+        <div class="ai-text">
+          <p>BTC memory state is MODERATE quality — 300 analogs at 74.6% confidence. The state profile (EXTREME vol, STRONG_UP momentum, HIGH_OVERLAP, WEAK follow-through) maps to MEAN_REVERSION_BIAS at 61.2%.</p>
+          <p>Temporal stability score of 0.000 — older analogs bullish, recent analogs bearish. This is a regime shift signal. Regime dependency at 0.733 means this edge is highly sensitive to the macro environment.</p>
+          <p>Use as a probabilistic prior: fade overextended moves, respect support after sweeps, avoid chasing breakouts blind. Do not treat as deterministic.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P3–P8 panels (condensed but complete) -->
+  <div class="panel" id="panel-p3" style="gap:16px">
+    <div class="col" style="flex:2">
+      <div class="section"><div class="section-label">Market Structure</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Structure</div><div class="kv-val yellow">MIXED_STRUCTURE</div></div>
+        <div class="kv-row"><div class="kv-key">Range State</div><div class="kv-val green">TRENDING</div></div>
+        <div class="kv-row"><div class="kv-key">Dominant Side</div><div class="kv-val green">BUY_SIDE</div></div>
+        <div class="kv-row"><div class="kv-key">Trap Risk</div><div class="kv-val green">LOW</div></div>
+      </div></div>
+      <div class="section"><div class="section-label">Liquidity Levels</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Buy-Side</div><div class="kv-val green">$69,988 (+0.99%)</div></div>
+        <div class="kv-row"><div class="kv-key">Sell-Side</div><div class="kv-val red">$65,084 (-6.09%)</div></div>
+        <div class="kv-row"><div class="kv-key">Nearest Magnet</div><div class="kv-val yellow">$69,988</div></div>
+      </div></div>
+      <div class="section"><div class="section-label">Liquidation Risk</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Long Liq Risk</div><div class="kv-val green">LOW</div></div>
+        <div class="kv-row"><div class="kv-key">Short Liq Risk</div><div class="kv-val yellow">MODERATE</div></div>
+        <div class="kv-row"><div class="kv-key">Cascade Prob</div><div class="kv-val yellow">48.6%</div></div>
+        <div class="kv-row"><div class="kv-key">Breakout Trap</div><div class="kv-val yellow">39.9%</div></div>
+      </div></div>
+    </div>
+    <div class="col" style="flex:3">
+      <div class="section" style="flex:1"><div class="section-label">AI Structure Overview</div><div class="ai-text">
+        <p>BTC is in a TRENDING tape with MIXED_STRUCTURE and NEUTRAL compression. Liquidity is skewed buy-side with the nearest magnet at $69,988 — approximately 1% above. The market is orienting around stop location above rather than clean directional discovery.</p>
+        <p>Breakout trap at 39.9%, breakdown at 20.1%. Low trap risk overall. Short liquidation risk is moderate with 48.6% cascade probability. The first move into liquidity is likely tradable, but higher-value signal comes from the reaction after the sweep.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-p4" style="gap:16px">
+    <div class="col" style="flex:2">
+      <div class="section"><div class="section-label">Candle Summary</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Dominant Intent</div><div class="kv-val green">BUY_ABSORPTION</div></div>
+        <div class="kv-row"><div class="kv-key">Confidence</div><div class="kv-val yellow" title="28.1% raw">LOW</div></div>
+        <div class="kv-row"><div class="kv-key">Momentum</div><div class="kv-val yellow">STALLING</div></div>
+        <div class="kv-row"><div class="kv-key">Follow-Through</div><div class="kv-val red">WEAK</div></div>
+        <div class="kv-row"><div class="kv-key">Pressure Bias</div><div class="kv-val green">BUY — WEAK</div></div>
+        <div class="kv-row"><div class="kv-key">Exhaustion</div><div class="kv-val green">NONE</div></div>
+        <div class="kv-row"><div class="kv-key">ATR</div><div class="kv-val">$848.75</div></div>
+        <div class="kv-row"><div class="kv-key">Vol Percentile</div><div class="kv-val red">76.0%</div></div>
+      </div></div>
+    </div>
+    <div class="col" style="flex:3">
+      <div class="section" style="flex:1"><div class="section-label">AI Candle Overview</div><div class="ai-text">
+        <p>BUY_ABSORPTION_CANDIDATE at 28% confidence. High overlap (0.98), body-to-range at 0.37, close location at 0.78 — price closed in upper range but on heavy churn. Lower wick at 0.415 shows buying is absorbing downside pressure but conviction is low.</p>
+        <p>Momentum is stalling, expansion is fading post-surge. Risk flags: weak follow-through, stalling momentum, weak directional pressure. This candle argues for patience. Absorption may resolve bullishly but evidence is insufficient to act on first impulse.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-p5" style="gap:16px">
+    <div class="col" style="flex:2">
+      <div class="section"><div class="section-label">Regime Summary</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Directional Regime</div><div class="kv-val green">STRONG_UPTREND</div></div>
+        <div class="kv-row"><div class="kv-key">Volatility Regime</div><div class="kv-val red">DISLOCATED</div></div>
+        <div class="kv-row"><div class="kv-key">Cycle Phase</div><div class="kv-val green">EXPANSION</div></div>
+        <div class="kv-row"><div class="kv-key">Confidence</div><div class="kv-val green" title="0.875 raw">HIGH — 87.5%</div></div>
+        <div class="kv-row"><div class="kv-key">MA Order</div><div class="kv-val green">BULLISH_STACKED</div></div>
+        <div class="kv-row"><div class="kv-key">Swing Structure</div><div class="kv-val green">HH·HL</div></div>
+        <div class="kv-row"><div class="kv-key">Vol Percentile</div><div class="kv-val red">99.5%</div></div>
+        <div class="kv-row"><div class="kv-key">7d Return</div><div class="kv-val green">+7.49%</div></div>
+      </div></div>
+      <div class="section"><div class="section-label">Strategy Fit</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Trend Following</div><div class="kv-val green">FAVORED</div></div>
+        <div class="kv-row"><div class="kv-key">Breakout Trading</div><div class="kv-val red">NOT FAVORED</div></div>
+        <div class="kv-row"><div class="kv-key">Mean Reversion</div><div class="kv-val red">NOT FAVORED</div></div>
+      </div></div>
+    </div>
+    <div class="col" style="flex:3">
+      <div class="section" style="flex:1"><div class="section-label">AI Regime Overview</div><div class="ai-text">
+        <p>STRONG_UPTREND with EXPANSION cycle phase at 87.5% confidence. BULLISH_STACKED moving averages, HIGHER_HIGH_HIGHER_LOW structure, momentum score +0.522. Regime is healthy and established.</p>
+        <p>Volatility is DISLOCATED at the 99.5th percentile — this is not an early, low-risk trend environment. Strategy fit strongly favors trend following, discourages breakout chasing and mean reversion.</p>
+        <p>Late-trend acceleration risk is the primary concern. Respect trend strength without confusing it for low risk. Risk must be wider than usual given DISLOCATED volatility.</p>
+      </div></div>
+      <div class="section"><div class="section-label">Risk Flags</div>
+        <div class="warning-row"><span>⚠</span><span>Late-trend acceleration risk</span></div>
+        <div class="warning-row"><span>⚠</span><span>Volatility shock risk</span></div>
+        <div class="warning-row"><span>⚠</span><span>Breakout failure risk</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-p6" style="gap:16px">
+    <div class="col" style="flex:2">
+      <div class="section">
+        <div class="section-label">Next Event</div>
+        <div class="countdown-big">5D 08H</div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:4px">FOMC Rate Decision</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:16px">April 29, 2026 · 18:00 UTC · HIGH</div>
+        <div class="section-label" style="margin-bottom:8px">Uncertainty</div>
+        <div class="uncertainty-bar-wrap"><div class="uncertainty-bar" style="width:75.5%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--yellow);margin-top:4px"><span>75.5%</span><span>HIGH</span></div>
+        <div class="uncertainty-labels" style="margin-top:6px"><span>LOW</span><span>MODERATE</span><span>HIGH</span><span>EXTREME</span></div>
+      </div>
+      <div class="section"><div class="section-label">Trade Restrictions</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Allow Trade</div><div class="kv-val green">YES</div></div>
+        <div class="kv-row"><div class="kv-key">Size Multiplier</div><div class="kv-val yellow">0.3×</div></div>
+        <div class="kv-row"><div class="kv-key">Leverage Cap</div><div class="kv-val yellow">2.0×</div></div>
+      </div></div>
+    </div>
+    <div class="col" style="flex:3">
+      <div class="section"><div class="section-label">FOMC Scenarios</div>
+        <div class="scenario-card">
+          <div class="scenario-header"><div class="scenario-case">Hawkish Hold / Higher-for-Longer</div><div class="scenario-prob">Qualitative</div></div>
+          <div class="scenario-body">Fed keeps policy tight. Downside extends if yields rise and dollar strengthens.</div>
+          <div class="scenario-move down">▼ DOWN · HIGH VOL</div>
+        </div>
+        <div class="scenario-card">
+          <div class="scenario-header"><div class="scenario-case">Neutral Hold / Limited Surprise</div><div class="scenario-prob">Qualitative</div></div>
+          <div class="scenario-body">Fed matches expectations. BTC reacts to positioning and Q&A nuance. Whipsaw likely.</div>
+          <div class="scenario-move neutral">↔ WHIPSAW · HIGH VOL</div>
+        </div>
+        <div class="scenario-card">
+          <div class="scenario-header"><div class="scenario-case">Dovish Shift / Easing Signal</div><div class="scenario-prob">Qualitative</div></div>
+          <div class="scenario-body">Softer policy expectations. Upside persists if correlated risk assets also catch a bid.</div>
+          <div class="scenario-move up">▲ UP · HIGH VOL</div>
+        </div>
+      </div>
+      <div class="section"><div class="section-label">Terminal Guidance</div>
+        <div style="font-size:12px;color:var(--yellow);line-height:1.6">High uncertainty. Prepare for expansion. Avoid positioning before release. Reduce size, keep leverage tightly capped.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-p7" style="gap:16px">
+    <div class="col" style="flex:2">
+      <div class="section"><div class="section-label">Council Verdict</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Council Bias</div><div class="kv-val red">NO_TRADE</div></div>
+        <div class="kv-row"><div class="kv-key">Tradeability</div><div class="kv-val red" title="0.000 raw">NONE</div></div>
+        <div class="kv-row"><div class="kv-key">Alignment</div><div class="kv-val yellow">INACTIVE</div></div>
+        <div class="kv-row"><div class="kv-key">Professor</div><div class="kv-val red">NO_TRADE (0.48%)</div></div>
+        <div class="kv-row"><div class="kv-key">Retail</div><div class="kv-val yellow">NO_ACTION (26.3%)</div></div>
+        <div class="kv-row"><div class="kv-key">Agreement</div><div class="kv-val">0.75</div></div>
+        <div class="kv-row"><div class="kv-key">Conflict</div><div class="kv-val">0.25</div></div>
+      </div></div>
+    </div>
+    <div class="col" style="flex:3">
+      <div class="section" style="flex:1"><div class="section-label">AI Council Overview</div><div class="ai-text">
+        <p>STRONG_UPTREND regime but council is standing down — both agents inactive, FOMC uncertainty at 76% is the dominant suppressor. INACTIVE_ALIGNMENT means both agents agree to not trade, not that they agree on direction.</p>
+        <p>Professor at near-zero calibrated probability. Retail at 26% but still below threshold. The council correctly reads event risk as the overriding factor. Post-FOMC, reassess whether regime and council align for a cleaner entry.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-p8" style="gap:16px">
+    <div class="col" style="flex:2">
+      <div class="section"><div class="section-label">Decision Gate</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Final Action</div><div class="kv-val green">PROBE_LONG</div></div>
+        <div class="kv-row"><div class="kv-key">Direction</div><div class="kv-val green">LONG</div></div>
+        <div class="kv-row"><div class="kv-key">Archetype</div><div class="kv-val">TREND_LONG</div></div>
+        <div class="kv-row"><div class="kv-key">Rationale</div><div class="kv-val" style="font-size:10px;color:var(--text2)">Viable but not strong enough for full size</div></div>
+      </div></div>
+      <div class="section"><div class="section-label">Risk Score</div>
+        <div class="risk-gauge"><div class="risk-score-big moderate">0.408</div><div><div class="risk-state-label">MODERATE</div></div></div>
+        <div class="comp-bar-row"><div class="comp-bar-label">Market Risk</div><div class="comp-bar-track"><div class="comp-bar-fill" style="width:42%"></div></div><div class="comp-bar-val">0.42</div></div>
+        <div class="comp-bar-row"><div class="comp-bar-label">Execution</div><div class="comp-bar-track"><div class="comp-bar-fill low" style="width:18%"></div></div><div class="comp-bar-val">0.18</div></div>
+        <div class="comp-bar-row"><div class="comp-bar-label">Model Risk</div><div class="comp-bar-track"><div class="comp-bar-fill" style="width:35%"></div></div><div class="comp-bar-val">0.35</div></div>
+        <div class="comp-bar-row"><div class="comp-bar-label">Veto Risk</div><div class="comp-bar-track"><div class="comp-bar-fill high" style="width:57%"></div></div><div class="comp-bar-val">0.57</div></div>
+      </div>
+      <div class="section"><div class="section-label">Sizing</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Size Fraction</div><div class="kv-val">0.4%</div></div>
+        <div class="kv-row"><div class="kv-key">Max Leverage</div><div class="kv-val">1.28×</div></div>
+        <div class="kv-row"><div class="kv-key">Confidence</div><div class="kv-val red" title="0.176 raw">LOW — 17.6%</div></div>
+        <div class="kv-row"><div class="kv-key">Tradability</div><div class="kv-val yellow" title="0.446 raw">MODERATE — 44.6%</div></div>
+      </div></div>
+    </div>
+    <div class="col" style="flex:3">
+      <div class="section"><div class="section-label">Execution Plan</div><div class="kv-block">
+        <div class="kv-row"><div class="kv-key">Entry</div><div class="kv-val">PROBE_ENTRY</div></div>
+        <div class="kv-row"><div class="kv-key">Stop</div><div class="kv-val">STRUCTURE + VOL STOP</div></div>
+        <div class="kv-row"><div class="kv-key">Target</div><div class="kv-val">NEAR_LIQUIDITY_TARGET</div></div>
+        <div class="kv-row"><div class="kv-key">Time Stop</div><div class="kv-val">4 bars</div></div>
+      </div></div>
+      <div class="section"><div class="section-label">Invalidators</div>
+        <div class="invalidator-row"><div class="inv-bullet">—</div><div>Cross-pillar directional edge flips from LONG</div></div>
+        <div class="invalidator-row"><div class="inv-bullet">—</div><div>Breakout acceptance fails after entry</div></div>
+        <div class="invalidator-row"><div class="inv-bullet">—</div><div>Event uncertainty expands further</div></div>
+      </div>
+      <div class="section"><div class="section-label">Warnings</div>
+        <div class="warning-row"><span>⚠</span><span>EVENT_UNCERTAINTY_ELEVATED</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="status-left">
+    <div class="status-item">P1 <span>✓</span></div>
+    <div class="status-item">P2 <span>✓</span></div>
+    <div class="status-item">P3 <span>✓</span></div>
+    <div class="status-item">P4 <span>✓</span></div>
+    <div class="status-item">P5 <span>✓</span></div>
+    <div class="status-item">P6 <span>✓</span></div>
+    <div class="status-item">P7 <span>✓</span></div>
+    <div class="status-item">P8 <span>✓</span></div>
+  </div>
+  <div class="status-right">
+    <div class="status-item">8 pillars active</div>
+    <div class="status-item">Next refresh <span id="next-refresh">60s</span></div>
+    <div class="status-item">BTCUSDT · 1H</div>
+  </div>
+</div>
+
+<script>
+// ── TRADINGVIEW CHART ────────────────────────────────
+new TradingView.widget({
+  container_id: "tradingview_chart",
+  symbol: "BINANCE:BTCUSDT",
+  interval: "60",
+  timezone: "UTC",
+  theme: "dark",
+  style: "1",
+  locale: "en",
+  toolbar_bg: "#0d0d0d",
+  enable_publishing: false,
+  hide_side_toolbar: false,
+  allow_symbol_change: false,
+  save_image: false,
+  backgroundColor: "#0d0d0d",
+  gridColor: "#1a1a1a",
+  width: "100%",
+  height: 400,
+  hide_volume: false,
+  studies: [],
+  show_popup_button: false,
+  popup_width: "1000",
+  popup_height: "650",
+  no_referral_id: true,
+  withdateranges: false,
+  hide_legend: false,
+  details: false,
+  hotlist: false,
+  calendar: false,
+  news: [],
+});
+
+// ── LIVE BTC PRICE (Binance WebSocket) ───────────────
+let lastPrice = 94210;
+
+function connectPriceFeed() {
+  const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@miniTicker');
+
+  ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    const newPrice = parseFloat(data.c);
+    const high     = parseFloat(data.h);
+    const low      = parseFloat(data.l);
+    const open24   = parseFloat(data.o);
+    const pctChange = ((newPrice - open24) / open24 * 100);
+
+    const priceEl  = document.getElementById('btc-price');
+    const changeEl = document.getElementById('btc-change');
+    const highEl   = document.getElementById('price-high');
+    const lowEl    = document.getElementById('price-low');
+
+    // Color based on direction vs last tick
+    if (newPrice > lastPrice) {
+      priceEl.className = 'price up';
+      priceEl.classList.add('price-flash-up');
+      setTimeout(() => priceEl.classList.remove('price-flash-up'), 400);
+    } else if (newPrice < lastPrice) {
+      priceEl.className = 'price down';
+      priceEl.classList.add('price-flash-down');
+      setTimeout(() => priceEl.classList.remove('price-flash-down'), 400);
+    }
+
+    priceEl.textContent = '$' + newPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    // 24h change color
+    if (pctChange >= 0) {
+      changeEl.className = 'price-change up';
+      changeEl.textContent = '+' + pctChange.toFixed(2) + '% (24h)';
+    } else {
+      changeEl.className = 'price-change down';
+      changeEl.textContent = pctChange.toFixed(2) + '% (24h)';
+    }
+
+    highEl.textContent = '$' + high.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+    lowEl.textContent  = '$' + low.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+    document.getElementById('last-update').textContent = 'Live · ' + new Date().toISOString().slice(11,19) + ' UTC';
+    lastPrice = newPrice;
+  };
+
+  ws.onclose = function() {
+    // Reconnect after 3s
+    setTimeout(connectPriceFeed, 3000);
+  };
+
+  ws.onerror = function() {
+    ws.close();
+  };
+}
+
+connectPriceFeed();
+
+// ── SENTIMENT HISTORY CHART ───────────────────────────
+// Simulated 7-day sentiment score data
+// In production: fetch from your SQLite/Supabase table
+const sentimentDays = ['Apr 19','Apr 20','Apr 21','Apr 22','Apr 23','Apr 24','Apr 25'];
+const sentimentScores = [0.12, -0.08, 0.05, -0.15, 0.02, -0.06, 0.01];
+
+const ctx = document.getElementById('sentimentChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: sentimentDays,
+    datasets: [{
+      label: 'Sentiment Score',
+      data: sentimentScores,
+      backgroundColor: sentimentScores.map(v =>
+        v > 0.05 ? 'rgba(61,220,132,0.7)' :
+        v < -0.05 ? 'rgba(255,77,77,0.7)' :
+        'rgba(240,192,64,0.5)'
+      ),
+      borderColor: sentimentScores.map(v =>
+        v > 0.05 ? '#3ddc84' :
+        v < -0.05 ? '#ff4d4d' :
+        '#f0c040'
+      ),
+      borderWidth: 1,
+      borderRadius: 2,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const v = ctx.raw;
+            const label = v > 0.05 ? 'POSITIVE' : v < -0.05 ? 'NEGATIVE' : 'NEUTRAL';
+            return `${label} (${v > 0 ? '+' : ''}${v.toFixed(3)})`;
+          }
+        },
+        backgroundColor: '#1a1a1a',
+        borderColor: '#2e2e2e',
+        borderWidth: 1,
+        titleColor: '#888',
+        bodyColor: '#e8e8e8',
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#1a1a1a' },
+        ticks: { color: '#555', font: { family: 'IBM Plex Mono', size: 10 } }
+      },
+      y: {
+        grid: { color: '#1a1a1a' },
+        ticks: { color: '#555', font: { family: 'IBM Plex Mono', size: 10 } },
+        min: -0.3,
+        max: 0.3,
+      }
+    }
+  }
+});
+
+// ── TAB SWITCHING ─────────────────────────────────────
+function switchTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── REFRESH ───────────────────────────────────────────
+function simulateRefresh() {
+  const btn = document.querySelector('.refresh-btn');
+  btn.textContent = '↻ Running...';
+  btn.style.color = 'var(--green)';
+  setTimeout(() => {
+    btn.textContent = '↻ Refresh All';
+    btn.style.color = '';
+  }, 3000);
+}
+
+// ── STATUS COUNTDOWN ──────────────────────────────────
+let countdown = 60;
+setInterval(() => {
+  countdown--;
+  if (countdown <= 0) countdown = 60;
+  document.getElementById('next-refresh').textContent = countdown + 's';
+}, 1000);
+</script>
+
+</body>
+</html>
