@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTC/USDT Terminal</title>
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+:root {
+  --bg:#0d0d0d; --bg2:#111111; --bg3:#181818; --border:#222; --border2:#2a2a2a;
+  --text:#e0e0e0; --text2:#777; --text3:#444;
+  --green:#3ddc84; --green-dim:rgba(61,220,132,0.12);
+  --red:#ff4d4d; --red-dim:rgba(255,77,77,0.12);
+  --yellow:#f0c040; --yellow-dim:rgba(240,192,64,0.12);
+  --blue:#4d9fff; --white:#fff;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:42px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.topbar-left{display:flex;align-items:center;gap:20px;}
+.logo{font-size:10px;font-weight:600;letter-spacing:.18em;color:var(--text3);text-transform:uppercase;}
+.price-block{display:flex;align-items:baseline;gap:8px;}
+.price{font-size:19px;font-weight:600;letter-spacing:-.02em;transition:color .25s;}
+.price.up{color:var(--green);} .price.down{color:var(--red);} .price.flat{color:var(--white);}
+.price-change{font-size:11px;font-weight:500;}
+.price-change.up{color:var(--green);} .price-change.down{color:var(--red);}
+@keyframes flashG{0%{background:rgba(61,220,132,.2)}100%{background:transparent}}
+@keyframes flashR{0%{background:rgba(255,77,77,.2)}100%{background:transparent}}
+.flash-up{animation:flashG .35s ease;} .flash-down{animation:flashR .35s ease;}
+.hl{font-size:10px;color:var(--text3);}
+.hl span{color:var(--text2);}
+.topbar-right{display:flex;align-items:center;gap:18px;}
+.meta{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text2);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+.dot.y{background:var(--yellow);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.chip{background:var(--yellow-dim);border:1px solid var(--yellow);color:var(--yellow);font-size:9px;font-weight:600;padding:2px 7px;border-radius:2px;letter-spacing:.06em;}
+.rbtn{background:none;border:1px solid var(--border2);color:var(--text2);font-family:var(--mono);font-size:10px;padding:3px 9px;cursor:pointer;border-radius:2px;transition:all .12s;}
+.rbtn:hover{border-color:var(--text2);color:var(--text);}
+
+/* TABS */
+.tabs{display:flex;align-items:center;padding:0 18px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:9px 14px;font-size:10px;font-weight:500;letter-spacing:.09em;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;text-transform:uppercase;white-space:nowrap;}
+.tab:hover{color:var(--text2);}
+.tab.active{color:var(--text);border-bottom-color:var(--white);}
+
+/* PANELS */
+.content{flex:1;overflow:hidden;display:flex;}
+.panel{display:none;width:100%;height:100%;overflow:hidden;}
+.panel.active{display:flex;}
+
+/* SECTION */
+.sec{background:var(--bg2);border:1px solid var(--border);padding:12px;}
+.sec-label{font-size:8px;font-weight:600;letter-spacing:.18em;color:var(--text3);text-transform:uppercase;margin-bottom:10px;}
+
+/* KV */
+.kv{display:flex;flex-direction:column;}
+.kvr{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;gap:10px;}
+.kvr:last-child{border-bottom:none;}
+.kvk{color:var(--text2);flex-shrink:0;}
+.kvv{color:var(--text);font-weight:500;text-align:right;}
+.g{color:var(--green);} .r{color:var(--red);} .y{color:var(--yellow);}
+
+/* SIGNAL ROWS */
+.sig-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.sig-row:last-child{border-bottom:none;}
+.sig-row:hover{background:var(--bg3);margin:0 -12px;padding:6px 12px;}
+.sig-left{display:flex;align-items:center;gap:8px;}
+.sig-p{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;width:62px;}
+.bar-wrap{width:50px;height:2px;background:var(--border);border-radius:1px;overflow:hidden;}
+.bar{height:100%;border-radius:1px;transition:width .5s;}
+.bar.g{background:var(--green);} .bar.r{background:var(--red);} .bar.y{background:var(--yellow);} .bar.d{background:var(--text3);}
+.sig-st{font-size:10px;font-weight:500;}
+.sig-st.g{color:var(--green);} .sig-st.r{color:var(--red);} .sig-st.y{color:var(--yellow);} .sig-st.d{color:var(--text2);}
+.sig-arr{font-size:12px;width:14px;text-align:center;color:var(--text3);}
+
+/* ALIGNMENT */
+.arow{display:flex;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:10px;}
+.arow:last-child{border-bottom:none;}
+.ap{color:var(--text3);width:64px;text-transform:uppercase;font-size:9px;letter-spacing:.08em;}
+.atrack{flex:1;height:2px;background:var(--border);border-radius:1px;position:relative;overflow:visible;margin:0 8px;}
+.afill{position:absolute;top:0;height:100%;border-radius:1px;transition:all .5s;}
+.afill.long{background:var(--green);left:50%;}
+.afill.short{background:var(--red);right:50%;}
+.amid{position:absolute;left:50%;top:-2px;width:1px;height:6px;background:var(--border2);transform:translateX(-50%);}
+.albl{width:70px;text-align:right;font-size:10px;}
+.albl.g{color:var(--green);} .albl.d{color:var(--text3);}
+
+/* VERDICT */
+.vaction{font-size:24px;font-weight:600;letter-spacing:-.02em;margin-bottom:3px;}
+.vaction.long{color:var(--green);} .vaction.no{color:var(--red);} .vaction.watch{color:var(--yellow);}
+.vsub{font-size:10px;color:var(--text2);margin-bottom:14px;}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.vilbl{font-size:8px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;}
+.vival{font-size:13px;font-weight:500;color:var(--text);cursor:help;}
+.vival.g{color:var(--green);} .vival.r{color:var(--red);} .vival.y{color:var(--yellow);}
+
+/* EXEC */
+.exr{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;gap:10px;}
+.exr:last-child{border-bottom:none;}
+.exk{color:var(--text2);} .exv{color:var(--text);font-weight:500;text-align:right;}
+
+/* INVALIDATORS */
+.invr{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);font-size:10px;color:var(--text2);}
+.invr:last-child{border-bottom:none;}
+.invb{color:var(--text3);flex-shrink:0;}
+
+/* WARNINGS */
+.warn{display:flex;align-items:center;gap:7px;padding:6px 9px;background:var(--yellow-dim);border-left:2px solid var(--yellow);margin-bottom:5px;font-size:10px;color:var(--yellow);}
+.warn:last-child{margin-bottom:0;}
+
+/* AI TEXT */
+.ai{font-family:var(--sans);font-size:11px;line-height:1.7;color:var(--text2);font-weight:300;}
+.ai p{margin-bottom:9px;} .ai p:last-child{margin-bottom:0;}
+
+/* STATUS */
+.statusbar{display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:24px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0;}
+.sl,.sr{display:flex;align-items:center;gap:14px;}
+.si{font-size:9px;color:var(--text3);} .si span{color:var(--text2);}
+
+/* SCENARIOS */
+.sc-card{border:1px solid var(--border);padding:10px 12px;margin-bottom:7px;}
+.sc-card:last-child{margin-bottom:0;}
+.sc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.sc-case{font-size:11px;font-weight:500;}
+.sc-prob{font-size:10px;color:var(--text2);}
+.sc-body{font-size:10px;color:var(--text2);line-height:1.5;}
+.sc-move{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:600;padding:2px 6px;margin-top:5px;}
+.sc-move.up{background:var(--green-dim);color:var(--green);}
+.sc-move.dn{background:var(--red-dim);color:var(--red);}
+.sc-move.nt{background:var(--border);color:var(--text2);}
+
+/* RISK GAUGE */
+.rgauge{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.rbig{font-size:28px;font-weight:600;letter-spacing:-.02em;}
+.rbig.low{color:var(--green);} .rbig.mod{color:var(--yellow);} .rbig.high{color:var(--red);}
+.rlbl{font-size:10px;color:var(--text2);letter-spacing:.1em;text-transform:uppercase;}
+.cbar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:10px;}
+.cbar-lbl{color:var(--text2);width:90px;flex-shrink:0;}
+.cbar-track{flex:1;height:3px;background:var(--border);border-radius:1px;overflow:hidden;}
+.cbar-fill{height:100%;border-radius:1px;background:var(--yellow);}
+.cbar-fill.low{background:var(--green);} .cbar-fill.high{background:var(--red);}
+.cbar-val{color:var(--text2);width:32px;text-align:right;flex-shrink:0;}
+
+/* UNCERTAINTY BAR */
+.ubar-wrap{width:100%;height:5px;background:var(--border);border-radius:1px;margin:10px 0 3px;overflow:hidden;}
+.ubar{height:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));border-radius:1px;}
+.ulbls{display:flex;justify-content:space-between;font-size:8px;color:var(--text3);letter-spacing:.07em;}
+
+/* HEADLINE ROWS */
+.hl-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:10px;}
+.hl-row:last-child{border-bottom:none;}
+.hl-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.hl-dot.pos{background:var(--green);} .hl-dot.neg{background:var(--red);} .hl-dot.neu{background:var(--text3);}
+.hl-txt{color:var(--text2);flex:1;line-height:1.5;}
+.hl-src{color:var(--text3);font-size:9px;flex-shrink:0;white-space:nowrap;}
+
+/* CHART CONTAINERS */
+.chart-box{position:relative;width:100%;height:100%;}
+.chart-canvas{width:100%!important;height:100%!important;}
+.chart-section{background:var(--bg2);border:1px solid var(--border);overflow:hidden;}
+
+/* ── RAW TERMINAL ── */
+.terminal-section{background:#000;border:1px solid var(--border2);flex-shrink:0;}
+.terminal-topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#0a0a0a;border-bottom:1px solid var(--border2);cursor:pointer;user-select:none;}
+.terminal-topbar-left{display:flex;align-items:center;gap:8px;}
+.t-dots{display:flex;gap:5px;}
+.t-dot{width:10px;height:10px;border-radius:50%;}
+.t-dot.red{background:#ff5f56;} .t-dot.yellow{background:#ffbd2e;} .t-dot.green{background:#27c93f;}
+.t-title{font-size:10px;color:var(--text3);letter-spacing:.08em;}
+.t-toggle{font-size:9px;color:var(--text3);letter-spacing:.05em;}
+.terminal-body{overflow-y:auto;max-height:220px;padding:12px 14px;font-family:var(--mono);font-size:10px;line-height:1.7;color:#ccc;transition:max-height .3s ease;}
+.terminal-body.collapsed{max-height:0;padding:0 14px;overflow:hidden;}
+.terminal-body::-webkit-scrollbar{width:3px;}
+.terminal-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.t-line{color:#aaa;}
+.t-green{color:#3ddc84;} .t-yellow{color:#f0c040;} .t-red{color:#ff4d4d;}
+.t-blue{color:#4d9fff;} .t-cyan{color:#4af;}  .t-white{color:#fff;}
+.t-dim{color:#555;}
+.t-header{color:#4af;font-weight:600;}
+.t-prompt{color:#555;}
+.t-section{color:#888;font-style:italic;}
+
+/* SCROLLABLE COLS */
+.scrl{overflow-y:auto;} .scrl::-webkit-scrollbar{width:3px;} .scrl::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* COUNTDOWN */
+.ctdown-big{font-size:28px;font-weight:600;letter-spacing:-.02em;color:var(--yellow);margin-bottom:3px;}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">BTC/USDT ◆</div>
+    <div class="price-block">
+      <div class="price flat" id="btc-price">$77,622.87</div>
+      <div class="price-change up" id="btc-change">+0.01% (24h)</div>
+    </div>
+    <div class="hl">H <span id="ph">$78,479</span> &nbsp; L <span id="pl">$77,264</span></div>
+  </div>
+  <div class="topbar-right">
+    <div class="meta"><div class="dot"></div><span id="sess">ASIA SESSION</span></div>
+    <div class="chip" id="evchip">⚡ FOMC IN 5D</div>
+    <div class="meta"><div class="dot y"></div><span id="lupd">Live · 04:35 UTC</span></div>
+    <button class="rbtn" onclick="simulateRefresh()">↺ Refresh All</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="sw('main',this)">Overview</div>
+  <div class="tab" onclick="sw('p1',this)">P1 · Sentiment</div>
+  <div class="tab" onclick="sw('p2',this)">P2 · Memory</div>
+  <div class="tab" onclick="sw('p3',this)">P3 · Structure</div>
+  <div class="tab" onclick="sw('p4',this)">P4 · Candle</div>
+  <div class="tab" onclick="sw('p5',this)">P5 · Regime</div>
+  <div class="tab" onclick="sw('p6',this)">P6 · Events</div>
+  <div class="tab" onclick="sw('p7',this)">P7 · Council</div>
+  <div class="tab" onclick="sw('p8',this)">P8 · Decision</div>
+</div>
+
+<div class="content">
+
+<!-- ════════════════════════════════════════════════════
+     MAIN OVERVIEW  (matches reference image layout)
+════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-main" style="flex-direction:column;overflow:hidden;">
+
+  <!-- TOP SECTION: Chart | Verdict | Signals -->
+  <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
+
+    <!-- CHART (left, ~50% width like reference) -->
+    <div style="flex:5;border-right:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;">
+      <div id="tv_main" style="flex:1;width:100%;"></div>
+    </div>
+
+    <!-- VERDICT (middle) -->
+    <div style="flex:3;border-right:1px solid var(--border);padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;" class="scrl">
+
+      <div class="sec" style="flex-shrink:0">
+        <div class="sec-label">Verdict</div>
+        <div class="vaction long">PROBE LONG</div>
+        <div class="vsub">Trend Long · FOMC caution · Moderate Risk</div>
+        <div class="vgrid">
+          <div><div class="vilbl">Risk</div><div class="vival y" title="0.408 raw">MODERATE</div></div>
+          <div><div class="vilbl">Size</div><div class="vival" title="0.004 fraction">0.4%</div></div>
+          <div><div class="vilbl">Leverage</div><div class="vival" title="1.28× max">1.3×</div></div>
+          <div><div class="vilbl">Confidence</div><div class="vival r" title="0.176 raw">LOW</div></div>
+        </div>
+      </div>
+
+      <div class="sec" style="flex-shrink:0">
+        <div class="sec-label">Execution</div>
+        <div class="exr"><div class="exk">Entry</div><div class="exv">Probe on confirmation</div></div>
+        <div class="exr"><div class="exk">Stop</div><div class="exv">Structure + vol stop</div></div>
+        <div class="exr"><div class="exk">Target</div><div class="exv">$69,988 liquidity</div></div>
+        <div class="exr"><div class="exk">Time stop</div><div class="exv">4 bars</div></div>
+      </div>
+
+      <div class="sec" style="flex-shrink:0">
+        <div class="sec-label">Invalidators</div>
+        <div class="invr"><div class="invb">—</div><div>Edge flips away from LONG across pillars</div></div>
+        <div class="invr"><div class="invb">—</div><div>Breakout acceptance fails after entry</div></div>
+        <div class="invr"><div class="invb">—</div><div>Event uncertainty expands further</div></div>
+      </div>
+
+    </div>
+
+    <!-- SIGNALS + ALIGNMENT (right panel) -->
+    <div style="flex:2;padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;" class="scrl">
+
+      <div class="sec" style="flex-shrink:0">
+        <div class="sec-label">Pillar Signals</div>
+        <div class="sig-row" onclick="sw('p1',document.querySelectorAll('.tab')[1])">
+          <div class="sig-left"><div class="sig-p">P1 Sent</div><div class="bar-wrap"><div class="bar d" style="width:50%"></div></div></div>
+          <div class="sig-st d">NEUTRAL</div><div class="sig-arr">→</div>
+        </div>
+        <div class="sig-row" onclick="sw('p2',document.querySelectorAll('.tab')[2])">
+          <div class="sig-left"><div class="sig-p">P2 Mem</div><div class="bar-wrap"><div class="bar r" style="width:60%"></div></div></div>
+          <div class="sig-st r">MEAN REV</div><div class="sig-arr">↓</div>
+        </div>
+        <div class="sig-row" onclick="sw('p3',document.querySelectorAll('.tab')[3])">
+          <div class="sig-left"><div class="sig-p">P3 Struct</div><div class="bar-wrap"><div class="bar d" style="width:42%"></div></div></div>
+          <div class="sig-st d">MIXED</div><div class="sig-arr">→</div>
+        </div>
+        <div class="sig-row" onclick="sw('p4',document.querySelectorAll('.tab')[4])">
+          <div class="sig-left"><div class="sig-p">P4 Cndl</div><div class="bar-wrap"><div class="bar g" style="width:40%"></div></div></div>
+          <div class="sig-st g">BUY ABS</div><div class="sig-arr">↑</div>
+        </div>
+        <div class="sig-row" onclick="sw('p5',document.querySelectorAll('.tab')[5])">
+          <div class="sig-left"><div class="sig-p">P5 Regime</div><div class="bar-wrap"><div class="bar g" style="width:90%"></div></div></div>
+          <div class="sig-st g">STR UP</div><div class="sig-arr">↑↑</div>
+        </div>
+        <div class="sig-row" onclick="sw('p6',document.querySelectorAll('.tab')[6])">
+          <div class="sig-left"><div class="sig-p">P6 Event</div><div class="bar-wrap"><div class="bar y" style="width:76%"></div></div></div>
+          <div class="sig-st y">FOMC 5D</div><div class="sig-arr">⚡</div>
+        </div>
+        <div class="sig-row" onclick="sw('p7',document.querySelectorAll('.tab')[7])">
+          <div class="sig-left"><div class="sig-p">P7 Cncl</div><div class="bar-wrap"><div class="bar d" style="width:22%"></div></div></div>
+          <div class="sig-st d">NO TRD</div><div class="sig-arr">—</div>
+        </div>
+        <div class="sig-row" onclick="sw('p8',document.querySelectorAll('.tab')[8])">
+          <div class="sig-left"><div class="sig-p">P8 Dcsn</div><div class="bar-wrap"><div class="bar g" style="width:45%"></div></div></div>
+          <div class="sig-st g">PRB LNG</div><div class="sig-arr">↑</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-label">Alignment</div>
+        <div class="arow"><div class="ap">Sentiment</div><div class="atrack"><div class="amid"></div><div class="afill long" style="width:0%"></div></div><div class="albl d">·</div></div>
+        <div class="arow"><div class="ap">Memory</div><div class="atrack"><div class="amid"></div><div class="afill short" style="width:0%"></div></div><div class="albl d">·</div></div>
+        <div class="arow"><div class="ap">Regime</div><div class="atrack"><div class="amid"></div><div class="afill long" style="width:45%"></div></div><div class="albl g">↑ LONG</div></div>
+        <div class="arow"><div class="ap">Events</div><div class="atrack"><div class="amid"></div><div class="afill long" style="width:0%"></div></div><div class="albl d">·</div></div>
+        <div class="arow"><div class="ap">Council</div><div class="atrack"><div class="amid"></div><div class="afill long" style="width:0%"></div></div><div class="albl d">·</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM STRIP: Invalidators + Warnings -->
+  <div style="display:flex;border-top:1px solid var(--border);flex-shrink:0;">
+    <div style="flex:1;padding:10px 14px;border-right:1px solid var(--border);">
+      <div style="font-size:8px;letter-spacing:.15em;color:var(--text3);text-transform:uppercase;margin-bottom:7px;">Invalidators</div>
+      <div class="invr"><div class="invb">—</div><div>Edge flips away from LONG across pillars</div></div>
+      <div class="invr"><div class="invb">—</div><div>Breakout acceptance fails after entry</div></div>
+      <div class="invr" style="border:none"><div class="invb">—</div><div>Event uncertainty expands further</div></div>
+    </div>
+    <div style="flex:2;padding:10px 14px;">
+      <div style="font-size:8px;letter-spacing:.15em;color:var(--text3);text-transform:uppercase;margin-bottom:7px;">Warnings</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="warn" style="margin:0;flex:1;min-width:200px;"><span>⚠</span><span>EVENT_UNCERTAINTY_ELEVATED — FOMC April 29</span></div>
+        <div class="warn" style="margin:0;flex:1;min-width:200px;"><span>⚠</span><span>Candle follow-through weak — avoid chasing</span></div>
+        <div class="warn" style="margin:0;flex:1;min-width:200px;"><span>⚠</span><span>Momentum stalling — wait for re-acceleration</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     P1 — SENTIMENT
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-p1" style="flex-direction:column;overflow:hidden;">
+  <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
+    <!-- LEFT -->
+    <div style="flex:2;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;border-right:1px solid var(--border);" class="scrl">
+      <div class="sec">
+        <div class="sec-label">Sentiment Summary</div>
+        <div class="kv">
+          <div class="kvr"><div class="kvk">Aggregate</div><div class="kvv y">NEUTRAL</div></div>
+          <div class="kvr"><div class="kvk">Confidence</div><div class="kvv">0.6%</div></div>
+          <div class="kvr"><div class="kvk">Articles</div><div class="kvv">58 analyzed</div></div>
+          <div class="kvr"><div class="kvk">Updated</div><div class="kvv" style="color:var(--text3)">09:24 UTC</div></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-label">Sentiment History — 7 Days</div>
+        <div style="height:160px;position:relative;"><canvas id="sentChart"></canvas></div>
+        <div style="display:flex;gap:14px;margin-top:8px;font-size:9px;color:var(--text3);">
+          <span><span style="color:var(--green)">■</span> Positive</span>
+          <span><span style="color:var(--red)">■</span> Negative</span>
+          <span><span style="color:var(--yellow)">■</span> Neutral</span>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-label">Source Breakdown</div>
+        <div class="kv">
+          <div class="kvr"><div class="kvk">CoinDesk</div><div class="kvv">13</div></div>
+          <div class="kvr"><div class="kvk">Cointelegraph</div><div class="kvv">11</div></div>
+          <div class="kvr"><div class="kvk">Decrypt</div><div class="kvv">10</div></div>
+          <div class="kvr"><div class="kvk">Federal Reserve</div><div class="kvv">10</div></div>
+          <div class="kvr"><div class="kvk">Ibtimes.com</div><div class="kvv">5</div></div>
+          <div class="kvr"><div class="kvk">Others</div><div class="kvv" style="color:var(--text3)">9</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- RIGHT -->
+    <div style="flex:3;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;" class="scrl">
+      <div class="sec">
+        <div class="sec-label">Institutional Macro Summary</div>
+        <div class="ai">
+          <p>Institutional sentiment remains neutral — a mix of geopolitical tensions, ETF inflows, and crypto market dynamics with low confidence indicating high uncertainty.</p>
+          <p>Fed policy tone remains cautious and data-dependent. ETF inflows and institutional crypto interest provide a counterbalance to geopolitical headwinds. The broader trend toward mainstream acceptance continues via CBDCs, stablecoins, and tokenized assets.</p>
+        </div>
+      </div>
+      <div class="sec" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+        <div class="sec-label">News Headlines Used in Analysis (58 articles)</div>
+        <div style="overflow-y:auto;flex:1;" class="scrl">
+          <div class="hl-row"><div class="hl-dot pos"></div><div class="hl-txt">BTC Surges Past $75,000 in 2026 Amid Geopolitical Tensions and ETF Inflows</div><div class="hl-src">Ibtimes</div></div>
+          <div class="hl-row"><div class="hl-dot pos"></div><div class="hl-txt">Bitcoin Surges Past $75,000 as Geopolitical Easing and ETF Inflows Spark Crypto Rebound</div><div class="hl-src">Ibtimes</div></div>
+          <div class="hl-row"><div class="hl-dot pos"></div><div class="hl-txt">Bitcoin Surges Past $71,000 as Institutional Inflows Fuel Rally</div><div class="hl-src">Ibtimes</div></div>
+          <div class="hl-row"><div class="hl-dot neu"></div><div class="hl-txt">CoinEx Monthly — Repricing Risk and Resilient Bitcoin</div><div class="hl-src">CoinDesk</div></div>
+          <div class="hl-row"><div class="hl-dot neg"></div><div class="hl-txt">Ethereum Dips to $2,180 as Ceasefire Rally Fades</div><div class="hl-src">CoinDesk</div></div>
+          <div class="hl-row"><div class="hl-dot neu"></div><div class="hl-txt">Federal Reserve Maintains Restrictive Policy Stance</div><div class="hl-src">Fed Reserve</div></div>
+          <div class="hl-row"><div class="hl-dot neu"></div><div class="hl-txt">Powell Signals Data-Dependent Approach as Labor Remains Resilient</div><div class="hl-src">Fed Reserve</div></div>
+          <div class="hl-row"><div class="hl-dot pos"></div><div class="hl-txt">Spot Bitcoin ETF Inflows Hit $800M in Single Day</div><div class="hl-src">Cointelegraph</div></div>
+          <div class="hl-row"><div class="hl-dot neg"></div><div class="hl-txt">Crypto Faces Pressure as Geopolitical Tensions Escalate</div><div class="hl-src">Decrypt</div></div>
+          <div class="hl-row"><div class="hl-dot neu"></div><div class="hl-txt">Stablecoin Regulation Progress: What Senate Bill Means for DeFi</div><div class="hl-src">Cointelegraph</div></div>
+          <div class="hl-row"><div class="hl-dot pos"></div><div class="hl-txt">BlackRock IBIT Records Strongest Week of Inflows Since January</div><div class="hl-src">CoinDesk</div></div>
+          <div class="hl-row"><div class="hl-dot neg"></div><div class="hl-txt">BTC Derivatives: Elevated Funding Rates — Sign of Overheating?</div><div class="hl-src">Decrypt</div></div>
+          <div class="hl-row"><div class="hl-dot neu"></div><div class="hl-txt">CBDC Pilots Expand Across Asia as BIS Report Drops</div><div class="hl-src">GlobeNewswire</div></div>
+          <div class="hl-row"><div class="hl-dot pos"></div><div class="hl-txt">Institutional BTC Demand Surges Ahead of Q2 End</div><div class="hl-src">CoinDesk</div></div>
+          <div class="hl-row" style="border:none;color:var(--text3);font-size:9px;padding-top:8px;">+ 44 more articles — run Pillar 1 for full list</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- RAW TERMINAL -->
+  <div class="terminal-section">
+    <div class="terminal-topbar" onclick="toggleTerminal('t1')">
+      <div class="terminal-topbar-left">
+        <div class="t-dots"><div class="t-dot red"></div><div class="t-dot yellow"></div><div class="t-dot green"></div></div>
+        <div class="t-title">pillar1_sentiment — raw terminal output</div>
+      </div>
+      <div class="t-toggle" id="t1-toggle">▲ collapse</div>
+    </div>
+    <div class="terminal-body" id="t1">
+<span class="t-prompt">((venv)) $ </span><span class="t-white">python3 -m pillar1_sentiment.run_pillar1</span>
+<span class="t-dim">[NewsAPI] Fetched 18 articles.</span>
+<span class="t-dim">[RSS:CoinDesk] Fetched 10 articles.</span>
+<span class="t-dim">[RSS:Cointelegraph] Fetched 10 articles.</span>
+<span class="t-dim">[RSS:Decrypt] Fetched 10 articles.</span>
+<span class="t-dim">[RSS:Federal Reserve] Fetched 10 articles.</span>
+<span class="t-dim">[Collector] Total unique articles: 58</span>
+<span class="t-green">[FinBERT] Analyzed 58 articles.</span>
+<span class="t-cyan">┌─ BTC/USDT TERMINAL | LIVE PILLAR 1 DATA ─────────────────────┐</span>
+<span class="t-line">  Sentiment State         <span class="t-yellow">NEUTRAL ⚖️</span></span>
+<span class="t-line">  Model Confidence        0.6%</span>
+<span class="t-line">  Articles Analyzed       58</span>
+<span class="t-line">  Last Updated            2026-04-25T09:24:00+00:00</span>
+<span class="t-cyan">├─ Institutional Sources ───────────────────────────────────────┤</span>
+<span class="t-line">  CoinDesk                13 articles</span>
+<span class="t-line">  Cointelegraph           11 articles</span>
+<span class="t-line">  Decrypt                 10 articles</span>
+<span class="t-line">  Federal Reserve         10 articles</span>
+<span class="t-line">  Ibtimes.com.au           5 articles</span>
+<span class="t-cyan">├─ Top Market Drivers ──────────────────────────────────────────┤</span>
+<span class="t-line">  » BTC Surges Past $75,000 in 2026 Amid ETF Inflows</span>
+<span class="t-line">  » Geopolitical Easing Sparks Crypto Rebound</span>
+<span class="t-line">  » Institutional Inflows Fuel Crypto Rally</span>
+<span class="t-cyan">├─ Institutional Macro Summary ─────────────────────────────────┤</span>
+<span class="t-line">  ● Institutional sentiment remains neutral, driven by mix of</span>
+<span class="t-line">    geopolitical tensions, ETF inflows, and crypto dynamics.</span>
+<span class="t-line">  ● Fed policy tone cautious and data-dependent.</span>
+<span class="t-line">  ● ETF inflows provide counterbalance to geopolitical headwinds.</span>
+<span class="t-cyan">└───────────────────────────────────────────────────────────────┘</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     P2 — MEMORY
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-p2" style="flex-direction:column;overflow:hidden;">
+  <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
+    <div style="flex:2;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;border-right:1px solid var(--border);" class="scrl">
+      <div class="sec"><div class="sec-label">Memory State</div><div class="kv">
+        <div class="kvr"><div class="kvk">Memory Bias</div><div class="kvv r">MEAN_REVERSION_BIAS</div></div>
+        <div class="kvr"><div class="kvk">Match Quality</div><div class="kvv y">MODERATE</div></div>
+        <div class="kvr"><div class="kvk">Sample Size</div><div class="kvv">300 analogs</div></div>
+        <div class="kvr"><div class="kvk">Confidence</div><div class="kvv">0.746</div></div>
+        <div class="kvr"><div class="kvk">Next 3-Bar Up</div><div class="kvv">47.9%</div></div>
+        <div class="kvr"><div class="kvk">Next 6-Bar Up</div><div class="kvv">51.6%</div></div>
+        <div class="kvr"><div class="kvk">Continuation</div><div class="kvv">20.5%</div></div>
+        <div class="kvr"><div class="kvk">Mean Reversion</div><div class="kvv g">61.2%</div></div>
+        <div class="kvr"><div class="kvk">Mean MFE 6-Bar</div><div class="kvv g">+1.25 ATR</div></div>
+        <div class="kvr"><div class="kvk">Mean MAE 6-Bar</div><div class="kvv r">-1.10 ATR</div></div>
+      </div></div>
+      <div class="sec"><div class="sec-label">Temporal Stability</div><div class="kv">
+        <div class="kvr"><div class="kvk">Older window</div><div class="kvv g">UP_BIAS (60.2%)</div></div>
+        <div class="kvr"><div class="kvk">Middle window</div><div class="kvv y">MIXED (53.0%)</div></div>
+        <div class="kvr"><div class="kvk">Recent window</div><div class="kvv r">DOWN_BIAS (41.8%)</div></div>
+        <div class="kvr"><div class="kvk">Temporal Stability</div><div class="kvv r">0.000 — unstable</div></div>
+        <div class="kvr"><div class="kvk">Regime Dependency</div><div class="kvv y">0.733 — sensitive</div></div>
+      </div></div>
+    </div>
+    <div style="flex:3;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;" class="scrl">
+      <div class="sec"><div class="sec-label">Context Memory</div><div class="kv">
+        <div class="kvr"><div class="kvk">Session</div><div class="kvv">MEAN_REVERSION_TENDENCY</div></div>
+        <div class="kvr"><div class="kvk">Calendar</div><div class="kvv">MEAN_REVERSION_TENDENCY</div></div>
+        <div class="kvr"><div class="kvk">Weekday-Hour</div><div class="kvv">MEAN_REVERSION_TENDENCY</div></div>
+      </div></div>
+      <div class="sec" style="flex:1"><div class="sec-label">AI Memory Overview</div><div class="ai">
+        <p>BTC memory state is MODERATE quality — 300 analogs at 74.6% confidence. State profile (EXTREME vol, STRONG_UP momentum, HIGH_OVERLAP, WEAK follow-through) maps to MEAN_REVERSION_BIAS at 61.2%.</p>
+        <p>Temporal stability 0.000 — older analogs bullish, recent bearish. This is a regime shift signal. Regime dependency 0.733 means this edge is highly sensitive to macro environment.</p>
+        <p>Use as probabilistic prior: fade overextended moves, respect support after sweeps, avoid chasing breakouts blind.</p>
+      </div></div>
+    </div>
+  </div>
+  <!-- RAW TERMINAL P2 -->
+  <div class="terminal-section">
+    <div class="terminal-topbar" onclick="toggleTerminal('t2')">
+      <div class="terminal-topbar-left"><div class="t-dots"><div class="t-dot red"></div><div class="t-dot yellow"></div><div class="t-dot green"></div></div><div class="t-title">pillar2_market_memory — raw terminal output</div></div>
+      <div class="t-toggle" id="t2-toggle">▲ collapse</div>
+    </div>
+    <div class="terminal-body" id="t2">
+<span class="t-prompt">((venv)) $ </span><span class="t-white">python3 -m pillar2_market_memory_engine.run_pillar2</span>
+<span class="t-cyan">┌─ BTC/USDT TERMINAL | LIVE PILLAR 2 — MARKET MEMORY ENGINE ───┐</span>
+<span class="t-line">  Memory Bias             <span class="t-red">MEAN_REVERSION_BIAS</span></span>
+<span class="t-line">  Match Quality           <span class="t-yellow">MODERATE</span></span>
+<span class="t-line">  Sample Size             300</span>
+<span class="t-line">  Headline Confidence     0.746</span>
+<span class="t-cyan">├─ Forward Outcome Probabilities ───────────────────────────────┤</span>
+<span class="t-line">  Next 3-Bar Up           47.9%</span>
+<span class="t-line">  Next 6-Bar Up           51.6%</span>
+<span class="t-line">  Continuation Prob       20.5%</span>
+<span class="t-line">  Mean Reversion Prob     <span class="t-green">61.2%</span></span>
+<span class="t-line">  Mean Return 6-Bar       +0.0017</span>
+<span class="t-line">  Mean MFE 6-Bar          <span class="t-green">1.2504</span></span>
+<span class="t-line">  Mean MAE 6-Bar          <span class="t-red">-1.0999</span></span>
+<span class="t-cyan">├─ Temporal Stability ──────────────────────────────────────────┤</span>
+<span class="t-line">  Older window            <span class="t-green">UP_BIAS     60.2%   n=100</span></span>
+<span class="t-line">  Middle window           <span class="t-yellow">MIXED       53.0%   n=100</span></span>
+<span class="t-line">  Recent window           <span class="t-red">DOWN_BIAS   41.8%   n=100</span></span>
+<span class="t-line">  Temporal Stability      <span class="t-red">0.000</span>   Regime Dependency: <span class="t-yellow">0.733</span></span>
+<span class="t-cyan">├─ Context Memory ──────────────────────────────────────────────┤</span>
+<span class="t-line">  Session Tendency        MEAN_REVERSION_TENDENCY</span>
+<span class="t-line">  Calendar Tendency       MEAN_REVERSION_TENDENCY</span>
+<span class="t-line">  Weekday-Hour            MEAN_REVERSION_TENDENCY</span>
+<span class="t-cyan">└───────────────────────────────────────────────────────────────┘</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     P3 — STRUCTURE  (with liquidity chart)
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-p3" style="flex-direction:column;overflow:hidden;">
+  <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
+    <!-- CHART with liquidity levels -->
+    <div style="flex:4;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:10px 14px 6px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div class="sec-label" style="margin:0">BTC/USDT — Liquidity Level Map</div>
+      </div>
+      <div style="flex:1;position:relative;overflow:hidden;">
+        <canvas id="liqChart" style="position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
+      </div>
+      <div style="padding:8px 14px;background:var(--bg2);border-top:1px solid var(--border);display:flex;gap:18px;font-size:9px;flex-shrink:0;">
+        <span><span style="color:var(--green)">■</span> Buy-Side Liquidity</span>
+        <span><span style="color:var(--red)">■</span> Sell-Side Liquidity</span>
+        <span><span style="color:var(--yellow)">─ ─</span> Nearest Magnet</span>
+        <span><span style="color:var(--blue)">─</span> Current Price</span>
+      </div>
+    </div>
+    <!-- DATA -->
+    <div style="flex:2;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;" class="scrl">
+      <div class="sec"><div class="sec-label">Market Structure</div><div class="kv">
+        <div class="kvr"><div class="kvk">Structure</div><div class="kvv y">MIXED</div></div>
+        <div class="kvr"><div class="kvk">Range State</div><div class="kvv g">TRENDING</div></div>
+        <div class="kvr"><div class="kvk">Dominant Side</div><div class="kvv g">BUY_SIDE</div></div>
+        <div class="kvr"><div class="kvk">Trap Risk</div><div class="kvv g">LOW</div></div>
+        <div class="kvr"><div class="kvk">Breakout Trap</div><div class="kvv y">39.9%</div></div>
+        <div class="kvr"><div class="kvk">Long Liq Risk</div><div class="kvv g">LOW</div></div>
+        <div class="kvr"><div class="kvk">Short Liq Risk</div><div class="kvv y">MODERATE</div></div>
+        <div class="kvr"><div class="kvk">Cascade Prob</div><div class="kvv y">48.6%</div></div>
+      </div></div>
+      <div class="sec"><div class="sec-label">Liquidity Levels</div><div class="kv">
+        <div class="kvr"><div class="kvk">Buy-Side</div><div class="kvv g">$69,988 (+0.99%)</div></div>
+        <div class="kvr"><div class="kvk">Sell-Side</div><div class="kvv r">$65,084 (-6.09%)</div></div>
+        <div class="kvr"><div class="kvk">Nearest Magnet</div><div class="kvv y">$69,988</div></div>
+        <div class="kvr"><div class="kvk">Target ▲</div><div class="kvv g">$70,096 (+1.14%)</div></div>
+        <div class="kvr"><div class="kvk">Target ▼</div><div class="kvv r">$67,792 (-2.18%)</div></div>
+        <div class="kvr"><div class="kvk">Target ▼</div><div class="kvv r">$66,885 (-3.49%)</div></div>
+      </div></div>
+      <div class="sec" style="flex:1"><div class="sec-label">AI Structure Overview</div><div class="ai">
+        <p>TRENDING tape, MIXED_STRUCTURE, NEUTRAL compression. Buy-side dominant. Nearest magnet $69,988 — 1% above. Market orienting around stop location, not clean discovery.</p>
+        <p>Low trap risk. Short liq risk moderate, cascade 48.6%. First move into liquidity tradable — higher value signal comes from reaction after the sweep.</p>
+      </div></div>
+    </div>
+  </div>
+  <!-- RAW TERMINAL P3 -->
+  <div class="terminal-section">
+    <div class="terminal-topbar" onclick="toggleTerminal('t3')">
+      <div class="terminal-topbar-left"><div class="t-dots"><div class="t-dot red"></div><div class="t-dot yellow"></div><div class="t-dot green"></div></div><div class="t-title">pillar3_structure_liquidity — raw terminal output</div></div>
+      <div class="t-toggle" id="t3-toggle">▲ collapse</div>
+    </div>
+    <div class="terminal-body" id="t3">
+<span class="t-prompt">((venv)) $ </span><span class="t-white">python3 -m pillar3_structure_liquidity_engine.run_pillar3</span>
+<span class="t-cyan">┌─ BTC/USDT TERMINAL | LIVE PILLAR 3 — STRUCTURE & LIQUIDITY ──┐</span>
+<span class="t-line">  Current Price           $69,304.00</span>
+<span class="t-line">  Market Structure        <span class="t-yellow">MIXED_STRUCTURE</span></span>
+<span class="t-line">  Range State             <span class="t-green">TRENDING</span></span>
+<span class="t-line">  Dominant Liquidity      <span class="t-green">BUY_SIDE</span>   →   STOP_CLUSTER_ABOVE</span>
+<span class="t-line">  Trap Risk               <span class="t-green">LOW</span></span>
+<span class="t-cyan">├─ Liquidity Levels ────────────────────────────────────────────┤</span>
+<span class="t-line">  Buy-Side Liquidity      <span class="t-green">$69,988.83   +0.99%</span></span>
+<span class="t-line">  Sell-Side Liquidity     <span class="t-red">$65,084.86   -6.09%</span></span>
+<span class="t-line">  Nearest Magnet          <span class="t-yellow">$69,988.83</span></span>
+<span class="t-cyan">├─ Trap Detection ──────────────────────────────────────────────┤</span>
+<span class="t-line">  Breakout Trap Prob      <span class="t-yellow">39.9%</span></span>
+<span class="t-line">  Breakdown Trap Prob     20.1%</span>
+<span class="t-line">  Likely Trap Side        <span class="t-green">NO_CLEAR_TRAP</span></span>
+<span class="t-cyan">├─ Liquidation Risk ────────────────────────────────────────────┤</span>
+<span class="t-line">  Long Liquidation Risk   <span class="t-green">LOW</span></span>
+<span class="t-line">  Short Liquidation Risk  <span class="t-yellow">MODERATE</span></span>
+<span class="t-line">  Cascade Probability     <span class="t-yellow">48.6%</span></span>
+<span class="t-cyan">├─ Risk Flags ──────────────────────────────────────────────────┤</span>
+<span class="t-line">  ⚠  Liquidity magnet above</span>
+<span class="t-cyan">└───────────────────────────────────────────────────────────────┘</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     P4 — CANDLE  (with zoomed-in candlestick chart)
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-p4" style="flex-direction:column;overflow:hidden;">
+  <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
+    <!-- CANDLESTICK CHART -->
+    <div style="flex:4;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:10px 14px 6px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div class="sec-label" style="margin:0">BTC/USDT · 1H · Latest 20 Candles</div>
+      </div>
+      <div id="tv_candle" style="flex:1;width:100%;"></div>
+    </div>
+    <!-- DATA -->
+    <div style="flex:2;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;" class="scrl">
+      <div class="sec"><div class="sec-label">Candle Summary</div><div class="kv">
+        <div class="kvr"><div class="kvk">Dominant Intent</div><div class="kvv g">BUY_ABSORPTION</div></div>
+        <div class="kvr"><div class="kvk">Confidence</div><div class="kvv y" title="28.1%">LOW</div></div>
+        <div class="kvr"><div class="kvk">Momentum</div><div class="kvv y">STALLING</div></div>
+        <div class="kvr"><div class="kvk">Follow-Through</div><div class="kvv r">WEAK</div></div>
+        <div class="kvr"><div class="kvk">Pressure Bias</div><div class="kvv g">BUY — WEAK</div></div>
+        <div class="kvr"><div class="kvk">Exhaustion</div><div class="kvv g">NONE</div></div>
+        <div class="kvr"><div class="kvk">Body/Range</div><div class="kvv">0.367</div></div>
+        <div class="kvr"><div class="kvk">Close Location</div><div class="kvv g">0.782 (upper)</div></div>
+        <div class="kvr"><div class="kvk">Overlap vs Prev</div><div class="kvv r">0.982 (high)</div></div>
+        <div class="kvr"><div class="kvk">ATR</div><div class="kvv">$848.75</div></div>
+        <div class="kvr"><div class="kvk">Vol Percentile</div><div class="kvv r">76.0%</div></div>
+      </div></div>
+      <div class="sec" style="flex:1"><div class="sec-label">AI Candle Overview</div><div class="ai">
+        <p>BUY_ABSORPTION_CANDIDATE at 28% confidence. High overlap 0.98, body 0.37, close at 0.78 — upper range close but heavy churn. Lower wick 0.415 shows downside being absorbed but conviction is low.</p>
+        <p>Momentum stalling, expansion fading post-surge. Risk flags: weak follow-through, stalling momentum, weak pressure. Patience required — not a chasing candle.</p>
+      </div></div>
+    </div>
+  </div>
+  <!-- RAW TERMINAL P4 -->
+  <div class="terminal-section">
+    <div class="terminal-topbar" onclick="toggleTerminal('t4')">
+      <div class="terminal-topbar-left"><div class="t-dots"><div class="t-dot red"></div><div class="t-dot yellow"></div><div class="t-dot green"></div></div><div class="t-title">pillar4_candle_engine — raw terminal output</div></div>
+      <div class="t-toggle" id="t4-toggle">▲ collapse</div>
+    </div>
+    <div class="terminal-body" id="t4">
+<span class="t-prompt">((venv)) $ </span><span class="t-white">python3 -m pillar4_candle_engine.run_pillar4</span>
+<span class="t-cyan">┌─ BTC/USDT TERMINAL | LIVE PILLAR 4 — CANDLE INTELLIGENCE ────┐</span>
+<span class="t-line">  Dominant Intent         <span class="t-green">BUY_ABSORPTION_CANDIDATE</span></span>
+<span class="t-line">  Intent Confidence       <span class="t-yellow">28.1%</span></span>
+<span class="t-line">  Momentum State          <span class="t-yellow">STALLING</span></span>
+<span class="t-line">  Control State           BALANCED</span>
+<span class="t-line">  Expansion State         <span class="t-yellow">POST_EXPANSION_FADE</span></span>
+<span class="t-line">  Follow-Through          <span class="t-red">WEAK</span></span>
+<span class="t-line">  Exhaustion State        <span class="t-green">NONE</span></span>
+<span class="t-cyan">├─ Candle Features ─────────────────────────────────────────────┤</span>
+<span class="t-line">  Body / Range Ratio      0.367</span>
+<span class="t-line">  Close Location          <span class="t-green">0.782</span>    (upper range)</span>
+<span class="t-line">  Upper Wick / Range      0.218</span>
+<span class="t-line">  Lower Wick / Range      <span class="t-yellow">0.415</span>    (absorption signal)</span>
+<span class="t-line">  ATR-Scaled Range        1.084</span>
+<span class="t-line">  Overlap vs Prev Bar     <span class="t-red">0.982</span>    (high churn)</span>
+<span class="t-line">  ATR                     $848.75</span>
+<span class="t-line">  Vol Percentile          <span class="t-red">76.0%</span></span>
+<span class="t-cyan">├─ Pressure ────────────────────────────────────────────────────┤</span>
+<span class="t-line">  Pressure Bias           <span class="t-green">BUY_PRESSURE</span>  Strength: <span class="t-red">WEAK</span></span>
+<span class="t-line">  Buying Pressure         0.230</span>
+<span class="t-line">  Selling Pressure        0.141</span>
+<span class="t-line">  Net Pressure            <span class="t-green">+0.089</span></span>
+<span class="t-cyan">├─ Risk Flags ──────────────────────────────────────────────────┤</span>
+<span class="t-line">  ⚠  Follow-through remains weak</span>
+<span class="t-line">  ⚠  Momentum context is stalling</span>
+<span class="t-line">  ⚠  Directional pressure remains weak</span>
+<span class="t-cyan">└───────────────────────────────────────────────────────────────┘</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     P5 — REGIME
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-p5" style="flex-direction:column;overflow:hidden;">
+  <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
+    <div style="flex:2;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;border-right:1px solid var(--border);" class="scrl">
+      <div class="sec"><div class="sec-label">Regime Summary</div><div class="kv">
+        <div class="kvr"><div class="kvk">Directional Regime</div><div class="kvv g">STRONG_UPTREND</div></div>
+        <div class="kvr"><div class="kvk">Volatility Regime</div><div class="kvv r">DISLOCATED</div></div>
+        <div class="kvr"><div class="kvk">Cycle Phase</div><div class="kvv g">EXPANSION</div></div>
+        <div class="kvr"><div class="kvk">Confidence</div><div class="kvv g" title="0.875 raw">HIGH — 87.5%</div></div>
+        <div class="kvr"><div class="kvk">MA Order</div><div class="kvv g">BULLISH_STACKED</div></div>
+        <div class="kvr"><div class="kvk">Swing Structure</div><div class="kvv g">HH·HL</div></div>
+        <div class="kvr"><div class="kvk">Vol Percentile</div><div class="kvv r">99.5%</div></div>
+        <div class="kvr"><div class="kvk">7d Return</div><div class="kvv g">+7.49%</div></div>
+      </div></div>
+      <div class="sec"><div class="sec-label">Strategy Fit</div><div class="kv">
+        <div class="kvr"><div class="kvk">Trend Following</div><div class="kvv g">FAVORED</div></div>
+        <div class="kvr"><div class="kvk">Breakout Trading</div><div class="kvv r">NOT FAVORED</div></div>
+        <div class="kvr"><div class="kvk">Mean Reversion</div><div class="kvv r">NOT FAVORED</div></div>
+      </div></div>
+      <div class="sec"><div class="sec-label">Risk Flags</div>
+        <div class="warn"><span>⚠</span><span>Late-trend acceleration risk</span></div>
+        <div class="warn"><span>⚠</span><span>Volatility shock risk</span></div>
+        <div class="warn"><span>⚠</span><span>Breakout failure risk</span></div>
+      </div>
+    </div>
+    <div style="flex:3;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;" class="scrl">
+      <div class="sec" style="flex:1"><div class="sec-label">AI Regime Overview</div><div class="ai">
+        <p>STRONG_UPTREND with EXPANSION cycle at 87.5% confidence. BULLISH_STACKED MAs, HIGHER_HIGH_HIGHER_LOW structure, momentum +0.522. Regime healthy and established.</p>
+        <p>Volatility DISLOCATED at 99.5th percentile — not a low-risk environment. Strongly favors trend following, discourages breakout chasing and mean reversion.</p>
+        <p>Late-trend acceleration is the primary risk. Respect trend strength without confusing it for safety. Risk must be wider than usual given DISLOCATED volatility.</p>
+      </div></div>
+    </div>
+  </div>
+  <div class="terminal-section">
+    <div class="terminal-topbar" onclick="toggleTerminal('t5')">
+      <div class="terminal-topbar-left"><div class="t-dots"><div class="t-dot red"></div><div class="t-dot yellow"></div><div class="t-dot green"></div></div><div class="t-title">pillar5_regime_cycle — raw terminal output</div></div>
+      <div class="t-toggle" id="t5-toggle">▲ collapse</div>
+    </div>
+    <div class="terminal-body" id="t5">
+<span class="t-prompt">((venv)) $ </span><span class="t-white">python3 -m pillar5_regime_cycle_engine.run_pillar5</span>
+<span class="t-cyan">┌─ BTC/USDT TERMINAL | LIVE PILLAR 5 — REGIME & CYCLE ─────────┐</span>
+<span class="t-line">  Directional Regime      <span class="t-green">STRONG_UPTREND</span></span>
+<span class="t-line">  Volatility Regime       <span class="t-red">DISLOCATED</span></span>
+<span class="t-line">  Market State            <span class="t-green">TRENDING</span></span>
+<span class="t-line">  Cycle Phase             <span class="t-green">EXPANSION</span></span>
+<span class="t-line">  Confidence Score        <span class="t-green">87.5%</span></span>
+<span class="t-line">  Stand Down              <span class="t-green">NO</span></span>
+<span class="t-cyan">├─ Price Metrics ───────────────────────────────────────────────┤</span>
+<span class="t-line">  Close                   $69,304.00</span>
+<span class="t-line">  ATR                     $888.81        ATR%: 1.28%</span>
+<span class="t-line">  Vol Percentile          <span class="t-red">99.5%</span></span>
+<span class="t-line">  24h Return              <span class="t-green">+6.13%</span></span>
+<span class="t-line">  7d Return               <span class="t-green">+7.49%</span></span>
+<span class="t-line">  Momentum Score          <span class="t-green">+0.522</span></span>
+<span class="t-line">  MA Order                <span class="t-green">BULLISH_STACKED</span></span>
+<span class="t-line">  Swing Structure         <span class="t-green">HIGHER_HIGH_HIGHER_LOW</span></span>
+<span class="t-cyan">├─ Strategy Compatibility ──────────────────────────────────────┤</span>
+<span class="t-line">  Trend Following         <span class="t-green">FAVORED</span></span>
+<span class="t-line">  Breakout Trading        <span class="t-red">NOT_FAVORED</span></span>
+<span class="t-line">  Mean Reversion          <span class="t-red">NOT_FAVORED</span></span>
+<span class="t-cyan">├─ Risk Flags ──────────────────────────────────────────────────┤</span>
+<span class="t-line">  ⚠  Late-trend acceleration risk</span>
+<span class="t-line">  ⚠  Volatility shock risk</span>
+<span class="t-line">  ⚠  Breakout failure risk</span>
+<span class="t-cyan">└───────────────────────────────────────────────────────────────┘</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     P6 — EVENTS
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-p6" style="flex-direction:column;overflow:hidden;">
+  <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
+    <div style="flex:2;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;border-right:1px solid var(--border);" class="scrl">
+      <div class="sec">
+        <div class="sec-label">Next Event</div>
+        <div class="ctdown-big">5D 08H</div>
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">FOMC Rate Decision</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:14px;">April 29, 2026 · 18:00 UTC · HIGH</div>
+        <div class="sec-label" style="margin-bottom:7px;">Uncertainty</div>
+        <div class="ubar-wrap"><div class="ubar" style="width:75.5%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--yellow);margin-top:3px;"><span>75.5%</span><span>HIGH</span></div>
+        <div class="ulbls" style="margin-top:5px;"><span>LOW</span><span>MOD</span><span>HIGH</span><span>EXTREME</span></div>
+      </div>
+      <div class="sec"><div class="sec-label">Trade Restrictions</div><div class="kv">
+        <div class="kvr"><div class="kvk">Allow Trade</div><div class="kvv g">YES</div></div>
+        <div class="kvr"><div class="kvk">Size Multiplier</div><div class="kvv y">0.3×</div></div>
+        <div class="kvr"><div class="kvk">Leverage Cap</div><div class="kvv y">2.0×</div></div>
+        <div class="kvr"><div class="kvk">Confidence</div><div class="kvv">64.8%</div></div>
+      </div></div>
+    </div>
+    <div style="flex:3;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;" class="scrl">
+      <div class="sec"><div class="sec-label">FOMC Scenarios</div>
+        <div class="sc-card"><div class="sc-hdr"><div class="sc-case">Hawkish Hold / Higher-for-Longer</div><div class="sc-prob">Qualitative</div></div><div class="sc-body">Fed keeps policy tight. Downside extends if yields rise and dollar strengthens.</div><div class="sc-move dn">▼ DOWN · HIGH VOL</div></div>
+        <div class="sc-card"><div class="sc-hdr"><div class="sc-case">Neutral Hold / Limited Surprise</div><div class="sc-prob">Qualitative</div></div><div class="sc-body">Fed matches expectations. Whipsaw likely on Q&A nuance.</div><div class="sc-move nt">↔ WHIPSAW · HIGH VOL</div></div>
+        <div class="sc-card"><div class="sc-hdr"><div class="sc-case">Dovish Shift / Easing Signal</div><div class="sc-prob">Qualitative</div></div><div class="sc-body">Softer policy. Upside persists if correlated risk assets catch a bid.</div><div class="sc-move up">▲ UP · HIGH VOL</div></div>
+      </div>
+      <div class="sec"><div class="sec-label">Terminal Guidance</div><div style="font-size:11px;color:var(--yellow);line-height:1.6;">High uncertainty. Prepare for expansion. Avoid positioning before release. Reduce size, keep leverage tightly capped.</div></div>
+    </div>
+  </div>
+  <div class="terminal-section">
+    <div class="terminal-topbar" onclick="toggleTerminal('t6')">
+      <div class="terminal-topbar-left"><div class="t-dots"><div class="t-dot red"></div><div class="t-dot yellow"></div><div class="t-dot green"></div></div><div class="t-title">pillar6_high_impact_events — raw terminal output</div></div>
+      <div class="t-toggle" id="t6-toggle">▲ collapse</div>
+    </div>
+    <div class="terminal-body" id="t6">
+<span class="t-prompt">((venv)) $ </span><span class="t-white">python3 -m pillar6_high_impact_events.run_pillar6</span>
+<span class="t-cyan">┌─ BTC/USDT TERMINAL | LIVE PILLAR 6 — HIGH IMPACT EVENT ──────┐</span>
+<span class="t-line">  Next Event              <span class="t-white">FOMC Rate Decision</span></span>
+<span class="t-line">  Event State             IDLE</span>
+<span class="t-line">  Scheduled (UTC)         <span class="t-yellow">2026-04-29 18:00:00</span></span>
+<span class="t-line">  Importance              <span class="t-red">HIGH</span></span>
+<span class="t-line">  Base Uncertainty        <span class="t-yellow">75.5%</span></span>
+<span class="t-line">  Model Confidence        64.8%</span>
+<span class="t-line">  Dominant Risk Skew      <span class="t-yellow">UNKNOWN</span>   (qualitative FOMC)</span>
+<span class="t-line">  Trade Status            <span class="t-green">✓ ALLOWED</span></span>
+<span class="t-cyan">├─ Trade Restrictions ──────────────────────────────────────────┤</span>
+<span class="t-line">  Size Multiplier         <span class="t-yellow">0.3×</span></span>
+<span class="t-line">  Leverage Cap            <span class="t-yellow">2.0×</span></span>
+<span class="t-line">  Reason                  High uncertainty regime — reduce size</span>
+<span class="t-cyan">├─ Event Scenarios ─────────────────────────────────────────────┤</span>
+<span class="t-line">  ● Hawkish Hold          → <span class="t-red">DOWN</span>  HIGH VOL</span>
+<span class="t-line">  ● Neutral Hold          → <span class="t-yellow">WHIPSAW</span>  HIGH VOL</span>
+<span class="t-line">  ● Dovish Shift          → <span class="t-green">UP</span>  HIGH VOL</span>
+<span class="t-cyan">├─ Terminal Guidance ───────────────────────────────────────────┤</span>
+<span class="t-line">  High uncertainty. Prepare for expansion.</span>
+<span class="t-line">  Avoid positioning before release.</span>
+<span class="t-cyan">└───────────────────────────────────────────────────────────────┘</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     P7 — COUNCIL
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-p7" style="flex-direction:column;overflow:hidden;">
+  <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
+    <div style="flex:2;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;border-right:1px solid var(--border);" class="scrl">
+      <div class="sec"><div class="sec-label">Council Verdict</div><div class="kv">
+        <div class="kvr"><div class="kvk">Council Bias</div><div class="kvv r">NO_TRADE</div></div>
+        <div class="kvr"><div class="kvk">Tradeability</div><div class="kvv r" title="0.000 raw">NONE</div></div>
+        <div class="kvr"><div class="kvk">Alignment</div><div class="kvv y">INACTIVE</div></div>
+        <div class="kvr"><div class="kvk">Professor</div><div class="kvv r">NO_TRADE (0.48%)</div></div>
+        <div class="kvr"><div class="kvk">Retail</div><div class="kvv y">NO_ACTION (26.3%)</div></div>
+        <div class="kvr"><div class="kvk">Agreement</div><div class="kvv">0.75</div></div>
+        <div class="kvr"><div class="kvk">Conflict</div><div class="kvv">0.25</div></div>
+      </div></div>
+      <div class="sec"><div class="sec-label">Shared State</div><div class="kv">
+        <div class="kvr"><div class="kvk">Sentiment (P1)</div><div class="kvv">neutral</div></div>
+        <div class="kvr"><div class="kvk">Memory (P2)</div><div class="kvv r">MEAN_REV</div></div>
+        <div class="kvr"><div class="kvk">Structure (P3)</div><div class="kvv y">MIXED</div></div>
+        <div class="kvr"><div class="kvk">Candle (P4)</div><div class="kvv">BUY_ABS</div></div>
+        <div class="kvr"><div class="kvk">Regime (P5)</div><div class="kvv g">STRONG_UP</div></div>
+        <div class="kvr"><div class="kvk">Event (P6)</div><div class="kvv y">IDLE — FOMC 5D</div></div>
+      </div></div>
+    </div>
+    <div style="flex:3;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;" class="scrl">
+      <div class="sec" style="flex:1"><div class="sec-label">AI Council Overview</div><div class="ai">
+        <p>STRONG_UPTREND regime but council is standing down — FOMC uncertainty at 76% is the dominant suppressor. INACTIVE_ALIGNMENT means both agents agree to not trade, not that they agree on direction. Correct read given event risk.</p>
+        <p>Professor at near-zero calibrated probability. Retail at 26% but below threshold. Post-FOMC, reassess whether regime and council align for cleaner entry.</p>
+      </div></div>
+    </div>
+  </div>
+  <div class="terminal-section">
+    <div class="terminal-topbar" onclick="toggleTerminal('t7')">
+      <div class="terminal-topbar-left"><div class="t-dots"><div class="t-dot red"></div><div class="t-dot yellow"></div><div class="t-dot green"></div></div><div class="t-title">pillar7_ml_council — raw terminal output</div></div>
+      <div class="t-toggle" id="t7-toggle">▲ collapse</div>
+    </div>
+    <div class="terminal-body" id="t7">
+<span class="t-prompt">((venv)) $ </span><span class="t-white">python3 -m pillar7_ml_council.run_pillar7</span>
+<span class="t-cyan">┌─ BTC/USDT TERMINAL | LIVE PILLAR 7 — ML COUNCIL ENGINE ──────┐</span>
+<span class="t-line">  Council Bias            <span class="t-red">NO_TRADE</span></span>
+<span class="t-line">  Tradeability Score      <span class="t-red">0.000</span></span>
+<span class="t-line">  Alignment               <span class="t-yellow">INACTIVE_ALIGNMENT</span></span>
+<span class="t-line">  Dominant Agent          RETAIL_AGENT</span>
+<span class="t-line">  Agreement Score         0.75</span>
+<span class="t-line">  Conflict Score          0.25</span>
+<span class="t-cyan">├─ Agent Outputs ───────────────────────────────────────────────┤</span>
+<span class="t-line">  Professor Agent         <span class="t-red">NO_TRADE</span>     raw=0.490  cal=<span class="t-red">0.005</span></span>
+<span class="t-line">  Retail Agent            <span class="t-yellow">NO_ACTION</span>    raw=0.432  cal=<span class="t-yellow">0.263</span></span>
+<span class="t-cyan">├─ Shared State ────────────────────────────────────────────────┤</span>
+<span class="t-line">  Sentiment (P1)          neutral</span>
+<span class="t-line">  Memory (P2)             <span class="t-red">MEAN_REVERSION_BIAS</span></span>
+<span class="t-line">  Structure (P3)          <span class="t-yellow">MIXED_STRUCTURE</span></span>
+<span class="t-line">  Candle (P4)             BUY_ABSORPTION_CANDIDATE</span>
+<span class="t-line">  Regime (P5)             <span class="t-green">STRONG_UPTREND</span></span>
+<span class="t-line">  Event (P6)              IDLE — FOMC 5D</span>
+<span class="t-cyan">├─ Reason Stack ────────────────────────────────────────────────┤</span>
+<span class="t-line">  → professor=NO_TRADE</span>
+<span class="t-line">  → retail=NO_ACTION</span>
+<span class="t-line">  → agreement_state=INACTIVE_ALIGNMENT</span>
+<span class="t-line">  → event_uncertainty_high (76%)</span>
+<span class="t-line">  → risk_flags=8</span>
+<span class="t-cyan">└───────────────────────────────────────────────────────────────┘</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     P8 — DECISION
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-p8" style="flex-direction:column;overflow:hidden;">
+  <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
+    <div style="flex:2;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;border-right:1px solid var(--border);" class="scrl">
+      <div class="sec"><div class="sec-label">Decision Gate</div><div class="kv">
+        <div class="kvr"><div class="kvk">Final Action</div><div class="kvv g">PROBE_LONG</div></div>
+        <div class="kvr"><div class="kvk">Direction</div><div class="kvv g">LONG</div></div>
+        <div class="kvr"><div class="kvk">Archetype</div><div class="kvv">TREND_LONG</div></div>
+        <div class="kvr"><div class="kvk">Confidence</div><div class="kvv r" title="0.176">LOW — 17.6%</div></div>
+        <div class="kvr"><div class="kvk">Tradability</div><div class="kvv y" title="0.446">MOD — 44.6%</div></div>
+      </div></div>
+      <div class="sec"><div class="sec-label">Risk Score</div>
+        <div class="rgauge"><div class="rbig mod">0.408</div><div><div class="rlbl">MODERATE</div></div></div>
+        <div class="cbar-row"><div class="cbar-lbl">Market Risk</div><div class="cbar-track"><div class="cbar-fill" style="width:42%"></div></div><div class="cbar-val">0.42</div></div>
+        <div class="cbar-row"><div class="cbar-lbl">Execution</div><div class="cbar-track"><div class="cbar-fill low" style="width:18%"></div></div><div class="cbar-val">0.18</div></div>
+        <div class="cbar-row"><div class="cbar-lbl">Model Risk</div><div class="cbar-track"><div class="cbar-fill" style="width:35%"></div></div><div class="cbar-val">0.35</div></div>
+        <div class="cbar-row"><div class="cbar-lbl">Veto Risk</div><div class="cbar-track"><div class="cbar-fill high" style="width:57%"></div></div><div class="cbar-val">0.57</div></div>
+      </div>
+      <div class="sec"><div class="sec-label">Sizing</div><div class="kv">
+        <div class="kvr"><div class="kvk">Size Fraction</div><div class="kvv">0.4%</div></div>
+        <div class="kvr"><div class="kvk">Max Leverage</div><div class="kvv">1.28×</div></div>
+      </div></div>
+    </div>
+    <div style="flex:3;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;" class="scrl">
+      <div class="sec"><div class="sec-label">Execution Plan</div><div class="kv">
+        <div class="kvr"><div class="kvk">Entry</div><div class="kvv">PROBE_ENTRY</div></div>
+        <div class="kvr"><div class="kvk">Stop</div><div class="kvv">STRUCTURE + VOL STOP</div></div>
+        <div class="kvr"><div class="kvk">Target</div><div class="kvv">NEAR_LIQUIDITY_TARGET</div></div>
+        <div class="kvr"><div class="kvk">Time Stop</div><div class="kvv">4 bars</div></div>
+      </div></div>
+      <div class="sec"><div class="sec-label">Invalidators</div>
+        <div class="invr"><div class="invb">—</div><div>Cross-pillar edge flips from LONG</div></div>
+        <div class="invr"><div class="invb">—</div><div>Breakout acceptance fails after entry</div></div>
+        <div class="invr"><div class="invb">—</div><div>Event uncertainty expands further</div></div>
+      </div>
+      <div class="sec"><div class="sec-label">Warnings</div>
+        <div class="warn"><span>⚠</span><span>EVENT_UNCERTAINTY_ELEVATED</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="terminal-section">
+    <div class="terminal-topbar" onclick="toggleTerminal('t8')">
+      <div class="terminal-topbar-left"><div class="t-dots"><div class="t-dot red"></div><div class="t-dot yellow"></div><div class="t-dot green"></div></div><div class="t-title">pillar8_decision_risk — raw terminal output</div></div>
+      <div class="t-toggle" id="t8-toggle">▲ collapse</div>
+    </div>
+    <div class="terminal-body" id="t8">
+<span class="t-prompt">((venv)) $ </span><span class="t-white">python3 -m pillar8_decision_risk_backtesting.run_pillar8</span>
+<span class="t-cyan">┌─ BTC/USDT TERMINAL | LIVE PILLAR 8 — DECISION, RISK & SIZING ┐</span>
+<span class="t-line">  Final Action            <span class="t-green">PROBE_LONG</span></span>
+<span class="t-line">  Direction               <span class="t-green">LONG</span></span>
+<span class="t-line">  Decision Archetype      TREND_LONG</span>
+<span class="t-line">  Decision Confidence     <span class="t-red">0.175</span>   (LOW)</span>
+<span class="t-line">  Tradability Score       <span class="t-yellow">0.447</span>   (MODERATE)</span>
+<span class="t-line">  Risk Score              <span class="t-yellow">0.409   (MODERATE)</span></span>
+<span class="t-line">  Size Fraction           0.004   (0.4%)</span>
+<span class="t-line">  Max Leverage            1.28×</span>
+<span class="t-cyan">├─ Cross-Pillar Alignment ──────────────────────────────────────┤</span>
+<span class="t-line">  Long Score              <span class="t-green">0.281</span>     Short Score: <span class="t-red">0.000</span></span>
+<span class="t-line">  Net Edge                0.281     Conflict:    0.000</span>
+<span class="t-line">  Dominant Direction      <span class="t-green">LONG</span></span>
+<span class="t-cyan">├─ Alignment per Pillar ────────────────────────────────────────┤</span>
+<span class="t-line">  sentiment    bias=<span class="t-yellow">+0.00</span>  weight=0.02  weighted=<span class="t-yellow">+0.000</span></span>
+<span class="t-line">  memory       bias=<span class="t-yellow">+0.00</span>  weight=0.37  weighted=<span class="t-yellow">+0.000</span></span>
+<span class="t-line">  structure    bias=<span class="t-yellow">+0.00</span>  weight=0.90  weighted=<span class="t-yellow">+0.000</span></span>
+<span class="t-line">  candle       bias=<span class="t-yellow">+0.00</span>  weight=0.40  weighted=<span class="t-yellow">+0.000</span></span>
+<span class="t-line">  regime       bias=<span class="t-green">+1.00</span>  weight=0.90  weighted=<span class="t-green">+0.900</span></span>
+<span class="t-line">  events       bias=<span class="t-yellow">+0.00</span>  weight=0.23  weighted=<span class="t-yellow">+0.000</span></span>
+<span class="t-line">  council      bias=<span class="t-yellow">+0.00</span>  weight=0.38  weighted=<span class="t-yellow">+0.000</span></span>
+<span class="t-cyan">├─ Execution Plan ──────────────────────────────────────────────┤</span>
+<span class="t-line">  Entry Style             PROBE_ENTRY</span>
+<span class="t-line">  Stop Framework          STRUCTURE_PLUS_VOLATILITY_STOP</span>
+<span class="t-line">  Target Framework        NEAR_LIQUIDITY_TARGET</span>
+<span class="t-line">  Time Stop Bars          4</span>
+<span class="t-line">  Invalidator             Edge flips away from LONG.</span>
+<span class="t-line">  Invalidator             Breakout acceptance fails after entry.</span>
+<span class="t-line">  Invalidator             Event uncertainty expands further.</span>
+<span class="t-cyan">├─ Warnings ────────────────────────────────────────────────────┤</span>
+<span class="t-line">  ⚠  EVENT_UNCERTAINTY_ELEVATED</span>
+<span class="t-cyan">└───────────────────────────────────────────────────────────────┘</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .content -->
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="sl">
+    <div class="si">P1 <span>✓</span></div><div class="si">P2 <span>✓</span></div><div class="si">P3 <span>✓</span></div><div class="si">P4 <span>✓</span></div>
+    <div class="si">P5 <span>✓</span></div><div class="si">P6 <span>✓</span></div><div class="si">P7 <span>✓</span></div><div class="si">P8 <span>✓</span></div>
+  </div>
+  <div class="sr">
+    <div class="si">8 pillars active</div>
+    <div class="si">Next refresh <span id="nxt">60s</span></div>
+    <div class="si">BTCUSDT · 1H</div>
+  </div>
+</div>
+
+<script>
+// ── TRADINGVIEW — MAIN ────────────────────────────────
+new TradingView.widget({
+  container_id:"tv_main", symbol:"BINANCE:BTCUSDT", interval:"60",
+  timezone:"UTC", theme:"dark", style:"1", locale:"en",
+  toolbar_bg:"#111", enable_publishing:false, hide_side_toolbar:false,
+  allow_symbol_change:false, save_image:false,
+  backgroundColor:"#0d0d0d", gridColor:"#181818",
+  width:"100%", height:"100%", hide_volume:false,
+  withdateranges:true, hide_legend:false,
+  details:false, hotlist:false, calendar:false,
+});
+
+// ── TRADINGVIEW — CANDLE (P4, zoomed in) ─────────────
+let tvCandle;
+function initCandleChart(){
+  if(tvCandle) return;
+  tvCandle = new TradingView.widget({
+    container_id:"tv_candle", symbol:"BINANCE:BTCUSDT", interval:"60",
+    timezone:"UTC", theme:"dark", style:"1", locale:"en",
+    toolbar_bg:"#111", enable_publishing:false, hide_side_toolbar:true,
+    allow_symbol_change:false, save_image:false,
+    backgroundColor:"#0d0d0d", gridColor:"#181818",
+    width:"100%", height:"100%", hide_volume:false,
+    range:"1D",   // show last 1 day = ~24 candles zoomed in
+    hide_legend:false, details:false, hotlist:false, calendar:false,
+  });
+}
+
+// ── LIQUIDITY CHART (P3) ──────────────────────────────
+function drawLiquidityChart(){
+  const canvas = document.getElementById('liqChart');
+  if(!canvas) return;
+  const W = canvas.parentElement.offsetWidth;
+  const H = canvas.parentElement.offsetHeight;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Price data (mock 30 candles around $69,304)
+  const basePrice = 69304;
+  const candles = [];
+  let p = basePrice - 4800;
+  for(let i=0;i<30;i++){
+    const o = p;
+    const range = 400 + Math.random()*600;
+    const h = o + range * (0.3 + Math.random()*0.7);
+    const l = o - range * (0.3 + Math.random()*0.7);
+    const c = l + Math.random()*(h-l);
+    candles.push({o,h,l,c});
+    p = c + (Math.random()-0.42)*300;
+  }
+  // last candle at current price
+  candles[29].c = basePrice;
+  candles[29].h = Math.max(candles[29].h, basePrice+200);
+
+  const prices = candles.flatMap(c=>[c.h,c.l]);
+  const minP = Math.min(...prices) - 500;
+  const maxP = Math.max(...prices) + 800;
+
+  const pad = {t:20,b:30,l:60,r:80};
+  const chartW = W-pad.l-pad.r;
+  const chartH = H-pad.t-pad.b;
+
+  const toY = price => pad.t + chartH - ((price-minP)/(maxP-minP))*chartH;
+  const toX = i => pad.l + (i/(candles.length-1))*chartW;
+
+  // Background
+  ctx.fillStyle='#0d0d0d';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle='#181818';
+  ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y = pad.t + (i/5)*chartH;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    const price = maxP - (i/5)*(maxP-minP);
+    ctx.fillStyle='#444';
+    ctx.font='9px IBM Plex Mono';
+    ctx.textAlign='right';
+    ctx.fillText('$'+Math.round(price).toLocaleString(), pad.l-4, y+3);
+  }
+
+  // Liquidity levels
+  const levels = [
+    {price:70096, label:'Buy $70,096', color:'#3ddc84', dash:[6,3]},
+    {price:69988, label:'Magnet $69,988', color:'#f0c040', dash:[4,4]},
+    {price:69304, label:'Price $69,304', color:'#4d9fff', dash:[]},
+    {price:67792, label:'Target $67,792', color:'#ff4d4d', dash:[6,3]},
+    {price:66885, label:'Sell $66,885', color:'#ff4d4d', dash:[4,4]},
+    {price:65084, label:'Sell $65,084', color:'#ff4d4d', dash:[3,5]},
+  ];
+
+  levels.forEach(lv=>{
+    const y = toY(lv.price);
+    if(y < pad.t || y > H-pad.b) return;
+    ctx.save();
+    ctx.strokeStyle = lv.color;
+    ctx.lineWidth = lv.price===69304 ? 1.5 : 1;
+    ctx.setLineDash(lv.dash);
+    ctx.globalAlpha = lv.price===69304 ? 0.9 : 0.55;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    ctx.restore();
+
+    // Label on right
+    ctx.save();
+    ctx.fillStyle = lv.color;
+    ctx.font = '9px IBM Plex Mono';
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(lv.label, W-pad.r+4, y+3);
+    ctx.restore();
+  });
+
+  // Candles
+  const cW = (chartW/candles.length)*0.6;
+  candles.forEach((c,i)=>{
+    const x = toX(i);
+    const oY = toY(c.o), cY = toY(c.c), hY = toY(c.h), lY = toY(c.l);
+    const bull = c.c >= c.o;
+    const col = bull ? '#3ddc84' : '#ff4d4d';
+    const dimcol = bull ? 'rgba(61,220,132,0.6)' : 'rgba(255,77,77,0.6)';
+
+    // Wick
+    ctx.strokeStyle = dimcol;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x,hY); ctx.lineTo(x,lY); ctx.stroke();
+
+    // Body
+    const bodyTop = Math.min(oY,cY);
+    const bodyH = Math.max(Math.abs(oY-cY),1);
+    ctx.fillStyle = bull ? 'rgba(61,220,132,0.85)' : 'rgba(255,77,77,0.85)';
+    ctx.fillRect(x-cW/2, bodyTop, cW, bodyH);
+  });
+
+  // Current price line label
+  const cpY = toY(69304);
+  ctx.save();
+  ctx.fillStyle='#4d9fff';
+  ctx.fillRect(W-pad.r, cpY-8, pad.r, 16);
+  ctx.fillStyle='#fff';
+  ctx.font='bold 9px IBM Plex Mono';
+  ctx.textAlign='center';
+  ctx.fillText('69,304', W-pad.r+pad.r/2, cpY+3);
+  ctx.restore();
+}
+
+// ── LIVE PRICE (Binance WebSocket) ───────────────────
+let lastP = 77622.87;
+function connectPrice(){
+  const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@miniTicker');
+  ws.onmessage = e=>{
+    const d = JSON.parse(e.data);
+    const np = parseFloat(d.c);
+    const pctC = ((np-parseFloat(d.o))/parseFloat(d.o)*100);
+    const el = document.getElementById('btc-price');
+    const ce = document.getElementById('btc-change');
+
+    if(np>lastP){el.className='price up';el.classList.add('flash-up');setTimeout(()=>el.classList.remove('flash-up'),350);}
+    else if(np<lastP){el.className='price down';el.classList.add('flash-down');setTimeout(()=>el.classList.remove('flash-down'),350);}
+
+    el.textContent='$'+np.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    ce.className='price-change '+(pctC>=0?'up':'down');
+    ce.textContent=(pctC>=0?'+':'')+pctC.toFixed(2)+'% (24h)';
+    document.getElementById('ph').textContent='$'+parseFloat(d.h).toLocaleString('en-US',{maximumFractionDigits:0});
+    document.getElementById('pl').textContent='$'+parseFloat(d.l).toLocaleString('en-US',{maximumFractionDigits:0});
+    document.getElementById('lupd').textContent='Live · '+new Date().toISOString().slice(11,19)+' UTC';
+    lastP=np;
+  };
+  ws.onclose=()=>setTimeout(connectPrice,3000);
+  ws.onerror=()=>ws.close();
+}
+connectPrice();
+
+// ── SENTIMENT CHART ───────────────────────────────────
+const sCtx = document.getElementById('sentChart').getContext('2d');
+const sDays = ['Apr 19','Apr 20','Apr 21','Apr 22','Apr 23','Apr 24','Apr 25'];
+const sData = [0.12,-0.08,0.05,-0.15,0.02,-0.06,0.01];
+new Chart(sCtx,{
+  type:'bar',
+  data:{
+    labels:sDays,
+    datasets:[{
+      data:sData,
+      backgroundColor:sData.map(v=>v>0.05?'rgba(61,220,132,0.7)':v<-0.05?'rgba(255,77,77,0.7)':'rgba(240,192,64,0.45)'),
+      borderColor:sData.map(v=>v>0.05?'#3ddc84':v<-0.05?'#ff4d4d':'#f0c040'),
+      borderWidth:1,borderRadius:2,
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        callbacks:{label:c=>{const v=c.raw;const l=v>0.05?'POSITIVE':v<-0.05?'NEGATIVE':'NEUTRAL';return l+' ('+(v>0?'+':'')+v.toFixed(3)+')';}},
+        backgroundColor:'#181818',borderColor:'#2a2a2a',borderWidth:1,
+        titleColor:'#777',bodyColor:'#e0e0e0',
+      }
+    },
+    scales:{
+      x:{grid:{color:'#181818'},ticks:{color:'#444',font:{family:'IBM Plex Mono',size:9}}},
+      y:{grid:{color:'#181818'},ticks:{color:'#444',font:{family:'IBM Plex Mono',size:9}},min:-0.25,max:0.25,}
+    }
+  }
+});
+
+// ── TAB SWITCH ────────────────────────────────────────
+function sw(id,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  // lazy init candle chart and liq chart
+  if(id==='p4') setTimeout(initCandleChart, 100);
+  if(id==='p3') setTimeout(drawLiquidityChart, 100);
+}
+
+// ── TERMINAL TOGGLE ───────────────────────────────────
+function toggleTerminal(id){
+  const body = document.getElementById(id);
+  const toggle = document.getElementById(id+'-toggle');
+  if(body.classList.contains('collapsed')){
+    body.classList.remove('collapsed');
+    toggle.textContent='▲ collapse';
+  } else {
+    body.classList.add('collapsed');
+    toggle.textContent='▼ expand';
+  }
+}
+
+// ── REFRESH ───────────────────────────────────────────
+function simulateRefresh(){
+  const btn=document.querySelector('.rbtn');
+  btn.textContent='↺ Running...';
+  btn.style.color='var(--green)';
+  setTimeout(()=>{btn.textContent='↺ Refresh All';btn.style.color='';},3000);
+}
+
+// ── COUNTDOWN ─────────────────────────────────────────
+let cd=60;
+setInterval(()=>{cd--;if(cd<=0)cd=60;document.getElementById('nxt').textContent=cd+'s';},1000);
+
+// Draw liq chart if P3 is somehow active on load
+if(document.getElementById('panel-p3').classList.contains('active')) drawLiquidityChart();
+</script>
+</body>
+</html>
